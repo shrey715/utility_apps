@@ -16,7 +16,7 @@ const Home = () => {
       <header className="text-left mt-3 ml-3 w-full">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white">Random Utility(?) Apps</h1>
       </header>
-      <div className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold mb-6 text-white">
+      <div className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold mb-6 text-white mt-5">
         {letters.map((letter, index) => (
           <motion.span
             key={index}
@@ -55,6 +55,14 @@ const Home = () => {
           onClick={() => handleRedirect('/dictionary')}
         >
           Dictionary
+        </motion.button>
+        <motion.button
+          className="bg-yellow-500 text-white text-lg px-6 py-3 rounded-lg shadow-md hover:bg-yellow-600"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => handleRedirect('/currency-converter')}
+        >
+          Currency Converter
         </motion.button>
       </div>
       <footer className="text-center mt-8 text-gray-400">
