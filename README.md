@@ -17,7 +17,7 @@ More mini apps will be added in the future to enhance the utility of this projec
 First, clone the repository and navigate to the project directory:
 
 ```bash
-git clone https://github.com/your-username/utility_apps.git
+git clone https://github.com/shrey715/utility_apps.git
 cd utility_apps
 ```
 
