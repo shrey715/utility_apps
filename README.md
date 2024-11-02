@@ -8,6 +8,7 @@ This project currently includes the following mini apps:
 
 - **QR Generator**: Generate QR codes from text input.
 - **SGPA Calculator**: Calculate your SGPA based on your course grades and credits.
+- **Dictionary**: Search for the meaning of words. Some words may not be present depending on their availability in Free Dictionary API.
 
 More mini apps will be added in the future to enhance the utility of this project.
 
@@ -16,8 +17,8 @@ More mini apps will be added in the future to enhance the utility of this projec
 First, clone the repository and navigate to the project directory:
 
 ```bash
-git clone https://github.com/your-username/random-utility-apps.git
-cd random-utility-apps
+git clone https://github.com/your-username/utility_apps.git
+cd utility_apps
 ```
 
 Then, install the dependencies:

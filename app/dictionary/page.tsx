@@ -42,7 +42,7 @@ interface ErrorModalProps {
 
 const ErrorModal: React.FC<ErrorModalProps> = ({ error, setError }) => {
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="bg-slate-200 text-neutral-950 p-6 rounded-lg shadow-lg max-w-3xl w-full border-2 border-white">
         <div className="flex flex-row justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Error</h2>
@@ -61,7 +61,7 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ error, setError }) => {
 
 const ResponseModal: React.FC<ResponseModalProps> = ({ data, setData }) => {
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="bg-slate-200 text-neutral-950 p-6 rounded-lg shadow-lg max-w-3xl w-full border-2 border-white overflow-y-auto max-h-[90vh]">
         <div className="flex flex-row justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Results</h2>
@@ -76,7 +76,7 @@ const ResponseModal: React.FC<ResponseModalProps> = ({ data, setData }) => {
           {data.map((result, index) => (
             <div key={index} className="flex flex-col gap-4 p-4 bg-white rounded-lg shadow-md">
               <div className="flex flex-row items-center justify-between border-b pb-2 mb-2">
-                <h3 className="text-lg font-semibold">{result.word}</h3>
+                <h3 className="text-lg font-semibold text-blue-700">{result.word}</h3>
                 {result.phonetics.some(phonetic => phonetic.audio) && (
                   <button
                     className="text-xl text-neutral-950 hover:text-neutral-900"
@@ -95,8 +95,8 @@ const ResponseModal: React.FC<ResponseModalProps> = ({ data, setData }) => {
               <p className="text-sm italic text-gray-600">Phonetic: {result.phonetic}</p>
               
               {result.meanings.map((meaning, meaningIndex) => (
-                <div key={meaningIndex} className="flex flex-col gap-2 border-t pt-2">
-                  <p className="italic font-semibold">{meaning.partOfSpeech}</p>
+                <div key={meaningIndex} className="flex flex-col gap-2 border-t pt-2 bg-gray-100 p-2 rounded-md">
+                  <p className="italic font-semibold text-green-700">{meaning.partOfSpeech}</p>
                   
                   {meaning.definitions.map((definition, defIndex) => (
                     <div key={defIndex} className="mb-2">
@@ -174,7 +174,7 @@ const Dictionary: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex flex-col items-center justify-center mb-10">
+      <div className="flex flex-col items-center justify-center mb-10 w-full">
         <input
           type="text"
           id="search"
@@ -194,7 +194,7 @@ const Dictionary: React.FC = () => {
       {error && <ErrorModal error={error} setError={setError} />}
       {data && <ResponseModal data={data} setData={setData} />}
 
-      <footer className="flex flex-row items-center justify-center text-gray-400">
+      <footer className="flex flex-row items-center justify-center text-gray-400 mt-10">
         Powered by Free Dictionary API
       </footer>
     </div>
