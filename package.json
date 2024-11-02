@@ -9,18 +9,28 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "axios": "^1.7.7",
+    "formidable": "^3.5.2",
+    "framer-motion": "^11.5.4",
+    "next": "14.2.12",
+    "next-themes": "^0.3.0",
+    "pdf-merger-js": "^5.1.2",
+    "qrcode.react": "^4.1.0",
     "react": "^18",
     "react-dom": "^18",
-    "next": "14.2.12"
+    "react-icons": "^5.3.0",
+    "react-modal": "^3.16.1",
+    "react-sortablejs": "^6.1.4"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@types/formidable": "^3.4.5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.12",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.12"
+    "typescript": "^5"
   }
 }
