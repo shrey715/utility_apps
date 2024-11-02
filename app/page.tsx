@@ -30,8 +30,6 @@ const Home = () => {
       </div>
       <p className="text-center text-lg sm:text-xl md:text-2xl mb-12 max-w-1/2 text-white">
         This is a scrap project done for just passing time, but feel free to look around and use anything useful (if anything is useful).
-        <br />
-        PS. Perma dark-mode because light mode is for the weak.
       </p>
       <div className="flex flex-wrap justify-center gap-6 mb-12 w-full max-w-2xl">
         <motion.button
@@ -49,6 +47,14 @@ const Home = () => {
           onClick={() => handleRedirect('/sgpa-calculator')}
         >
           SGPA Calculator
+        </motion.button>
+        <motion.button
+          className="bg-green-500 text-white text-lg px-6 py-3 rounded-lg shadow-md hover:bg-green-600"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => handleRedirect('/dictionary')}
+        >
+          Dictionary
         </motion.button>
       </div>
       <footer className="text-center mt-8 text-gray-400">
