@@ -13,8 +13,8 @@ const CurrencyConverter = () => {
   const [result, setResult] = useState<number>(0);
   const [currencies, setCurrencies] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
+  const [rate, setRate] = useState(0);
 
-  // Load currencies from JSON file
   useEffect(() => {
     const loadCurrencies = async () => {
       const response = await fetch('/currencies.json');
@@ -31,8 +31,10 @@ const CurrencyConverter = () => {
     const data = await response.json();
 
     if (response.ok) {
+      setRate(data.conversionRate);
       setResult(data.convertedAmount);
     } else {
+      setRate(0);
       setResult(0);
     }
     setLoading(false);
@@ -110,13 +112,18 @@ const CurrencyConverter = () => {
               <span className="font-semibold">{amt} {fromCurrency}</span>
               <FaExchangeAlt className="text-white text-4xl my-4" />
               <span className="font-bold text-blue-400">{result.toFixed(2)} {toCurrency}</span>
+              {
+                rate !== 0 && (
+                  <p className="text-gray-400 text-lg mt-3">1 {fromCurrency} = {rate.toFixed(4)} {toCurrency}</p>
+                )
+              }
             </div>
           )
         )}
       </div>
 
       <footer className="text-center text-gray-400 text-xs sm:text-sm mt-10">
-        <p>Powered by ExchangeRate-API</p>
+        <p>Powered by Freecurrency-API</p>
       </footer>
     </div>
   );

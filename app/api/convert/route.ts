@@ -25,13 +25,13 @@ export async function GET(request: Request): Promise<NextResponse> {
     const data = await response.json();
     console.log('API response data:', data);
 
-    const rate = data.data.mid;
-    const convertedAmount = rate*parseFloat(amount);
+    const conversionRate = data.data.mid;
+    const convertedAmount = conversionRate*parseFloat(amount);
 
-    console.log('Exchange rate:', rate);
+    console.log('Exchange rate:', conversionRate);
     console.log('Converted amount:', convertedAmount);  
 
-    return NextResponse.json({ rate, convertedAmount });
+    return NextResponse.json({ conversionRate, convertedAmount });
   } catch (error) {
     console.error('An error occurred while fetching exchange rate:', error);
     return NextResponse.json({ error: 'An error occurred while fetching exchange rate' }, { status: 500 });
