@@ -10,6 +10,7 @@ This project currently includes the following mini apps:
 - **SGPA Calculator**: Calculate your SGPA based on your course grades and credits.
 - **Dictionary**: Search for the meaning of words. Some words may not be present depending on their availability in Free Dictionary API.
 - **Currency Converter**: Convert currency from one unit to another. The exchange rates are fetched from Freecurrency API.
+- **Color Picker**: Pick colors from a color palette and copy the hex code to clipboard. Also allows to check different palettes.
 
 More mini apps will be added in the future to enhance the utility of this project.
 
