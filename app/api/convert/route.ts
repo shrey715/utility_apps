@@ -12,14 +12,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 
-  const apiKey = process.env.CURRENCY_API_KEY;
-  if (!apiKey) {
-    console.error('API key not found');
-    return NextResponse.json({ error: 'API key not found' }, { status: 500 });
-  }
-
   try {
-    const response = await fetch(`https://v6.exchangerate-api.com/v6/${apiKey}/pair/${fromCurrency}/${toCurrency}/${amount}`);
+    const requestURL = "https://hexarate.paikama.co/api/rates/latest/" + fromCurrency + "?target=" + toCurrency;
+    console.log('Fetching exchange rate:', requestURL);
+    const response = await fetch(requestURL);
 
     if (!response.ok) {
       console.error('Failed to fetch exchange rate:', response.statusText);
@@ -29,8 +25,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     const data = await response.json();
     console.log('API response data:', data);
 
-    const rate = data.conversion_rates;
-    const convertedAmount = data.conversion_result;
+    const rate = data.data.mid;
+    const convertedAmount = rate*parseFloat(amount);
 
     console.log('Exchange rate:', rate);
     console.log('Converted amount:', convertedAmount);  

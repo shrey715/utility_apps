@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { FaHome, FaExchangeAlt } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { FaSpinner } from 'react-icons/fa';
 
 const CurrencyConverter = () => {
   const router = useRouter();
@@ -11,6 +12,7 @@ const CurrencyConverter = () => {
   const [toCurrency, setToCurrency] = useState('INR');
   const [result, setResult] = useState<number>(0);
   const [currencies, setCurrencies] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(false);
 
   // Load currencies from JSON file
   useEffect(() => {
@@ -24,6 +26,7 @@ const CurrencyConverter = () => {
   }, []);
 
   const convertCurrency = async () => {
+    setLoading(true);
     const response = await fetch(`/api/convert?amount=${amt}&from=${fromCurrency}&to=${toCurrency}`);
     const data = await response.json();
 
@@ -32,6 +35,7 @@ const CurrencyConverter = () => {
     } else {
       setResult(0);
     }
+    setLoading(false);
   };
 
   return (
@@ -96,12 +100,18 @@ const CurrencyConverter = () => {
           </motion.button>
         </div>
 
-        {result !== null && (
-          <div className="text-white text-2xl text-center mt-8 transition duration-300 w-full flex flex-col items-center">
-            <span className="font-semibold">{amt} {fromCurrency}</span>
-            <FaExchangeAlt className="text-white text-4xl my-4" />
-            <span className="font-bold text-blue-400">{result.toFixed(2)} {toCurrency}</span>
+        {loading ? (
+          <div className="flex justify-center items-center mt-8">
+            <FaSpinner className="text-white text-4xl animate-spin" />
           </div>
+        ) : (
+          result !== null && (
+            <div className="text-white text-2xl text-center mt-8 transition duration-300 w-full flex flex-col items-center">
+              <span className="font-semibold">{amt} {fromCurrency}</span>
+              <FaExchangeAlt className="text-white text-4xl my-4" />
+              <span className="font-bold text-blue-400">{result.toFixed(2)} {toCurrency}</span>
+            </div>
+          )
         )}
       </div>
 
