@@ -4,6 +4,7 @@ import { FaHome, FaSpinner } from 'react-icons/fa';
 import { useState } from 'react';
 import React from 'react';
 import Image from 'next/image';
+import Modal from 'react-modal';
 
 interface WeatherData {
   name: string;
@@ -38,14 +39,13 @@ const WeatherDisplay: React.FC<{ data: WeatherData }> = ({ data }) => {
 
   const {
     name,
-    sys: { country, sunrise, sunset },
+    sys: { country },
     main: { temp, feels_like, temp_min, temp_max, pressure, humidity },
     weather,
     wind: { speed },
     clouds: { all: cloudiness },
   } = data;
 
-  const weatherMain = weather[0].main;
   const weatherDescription = weather[0].description;
   const weatherIcon = weather[0].icon;
 
@@ -68,7 +68,7 @@ const WeatherDisplay: React.FC<{ data: WeatherData }> = ({ data }) => {
         </div>
       </div>
       
-      <div className="flex flex-col md:flex-row justify-between w-full mb-4 md:mb-8 space-y-4 md:space-y-0">
+      <div className="flex flex-col md:flex-row justify-between w-full mb-4 md:mb-8 space-y-4 md:space-y-0 md:space-x-7">
         <div className="flex flex-col items-center">
           <p className="text-lg">Feels Like</p>
           <p className="text-2xl font-semibold">{feels_like.toFixed(1)}°C</p>
@@ -109,6 +109,7 @@ const Weather: React.FC = () => {
   const router = useRouter();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const getWeather = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if(e.key !== 'Enter') return;
@@ -116,16 +117,19 @@ const Weather: React.FC = () => {
 
     if(!city){
       console.error('Invalid request parameters:', {city});
+      setError('Please enter a city name.');
       return;
     }
 
     try{
       setWeather(null);
       setLoading(true);
+      setError(null);
       const response = await fetch(`/api/weather?city=${city}`);
 
       if(!response.ok){
         console.error('Failed to fetch weather data:', response.statusText);
+        setError('Weather data not found.');
         setLoading(false);
         return;
       }
@@ -137,6 +141,7 @@ const Weather: React.FC = () => {
     }catch(error){
       setLoading(false);
       setWeather(null);
+      setError('An error occurred while fetching weather data.');
       console.error('An error occurred while fetching weather data:', error);
     }
   }
@@ -156,18 +161,32 @@ const Weather: React.FC = () => {
         <input type="text" placeholder="Enter city (only in India)" className="bg-gray-800 p-4 w-full rounded-lg" onKeyDown={getWeather} />
       </div>
 
-      {
-        loading && (
-          <div className="flex flex-col items-center space-y-4">
-            <FaSpinner size={48} className="animate-spin" />
-            <p>Fetching weather data...</p>
-          </div>
-        )
-      }
+      {loading && (
+        <div className="flex flex-col items-center space-y-4">
+          <FaSpinner size={48} className="animate-spin" />
+          <p>Fetching weather data...</p>
+        </div>
+      )}
 
-      {
-        weather && <WeatherDisplay data={weather} />
-      }
+      {error && (
+        <Modal
+          isOpen={!!error}
+          onRequestClose={() => setError(null)}
+          contentLabel="Error"
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+          overlayClassName="fixed inset-0 bg-black bg-opacity-50"
+        >
+          <div className="bg-white p-6 rounded-lg shadow-lg text-black">
+            <h2 className="text-2xl font-bold mb-4">Error</h2>
+            <p>{error}</p>
+            <button onClick={() => setError(null)} className="mt-4 bg-red-500 text-white p-2 rounded">
+              Close
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {weather && <WeatherDisplay data={weather} />}
     </div>
   )
 }

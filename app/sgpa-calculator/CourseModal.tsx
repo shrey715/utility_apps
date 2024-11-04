@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FaPlus, FaSave, FaTimes } from 'react-icons/fa';
 
 interface Course {
@@ -30,21 +30,7 @@ export default function CourseModal({ course, onSave, onClose }: CourseModalProp
   const [marks, setMarks] = useState(course?.marks || [{ mark: 0, total: 0, weightage: 0 }]);
   const [grade, setGrade] = useState(course?.grade || 0);
 
-  useEffect(() => {
-    calculateGrade();
-  }, [marks]);
-
-  const addMark = () => {
-    setMarks([...marks, { mark: 0, total: 0, weightage: 0 }]);
-  };
-
-  const handleMarkChange = (index: number, key: keyof typeof marks[0], value: number) => {
-    const updatedMarks = [...marks];
-    updatedMarks[index][key] = value;
-    setMarks(updatedMarks);
-  };
-
-  const calculateGrade = () => {
+  const calculateGrade = useCallback(() => {
     const totalWeight = marks.reduce((sum, mark) => sum + mark.weightage, 0);
     const totalMarks = marks.reduce((sum, mark) => sum + (mark.mark / mark.total) * mark.weightage, 0);
     const coursePercentage = (totalMarks / totalWeight) * 100;
@@ -56,7 +42,22 @@ export default function CourseModal({ course, onSave, onClose }: CourseModalProp
       }
     }
     setGrade(0);
+  }, [marks, cutoffs]);
+
+  useEffect(() => {
+    calculateGrade();
+  }, [marks, calculateGrade]);
+
+  const addMark = () => {
+    setMarks([...marks, { mark: 0, total: 0, weightage: 0 }]);
   };
+
+  const handleMarkChange = (index: number, key: keyof typeof marks[0], value: number) => {
+    const updatedMarks = [...marks];
+    updatedMarks[index][key] = value;
+    setMarks(updatedMarks);
+  };
+
 
   const saveCourse = () => {
     onSave({ name, credits, cutoffs, marks, grade });
