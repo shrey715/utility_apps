@@ -68,11 +68,8 @@ const Qrgenerator = () => {
     <div className="flex flex-col min-h-screen bg-transparent p-6">
       <div className="flex flex-row justify-between mb-10">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white text-left">QR Generator</h1>
-        <button
-          className="bg-gray-800 text-white text-sm sm:text-lg px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg hover:bg-gray-700 flex items-center"
-          onClick={() => router.push('/')}
-        >
-          <FaHome />
+        <button onClick={() => router.push('/')} className="bg-gray-700 p-4 rounded-full shadow-md hover:bg-gray-600">
+          <FaHome size={28} />
         </button>
       </div>
 

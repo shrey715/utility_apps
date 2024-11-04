@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaHome, FaTimes } from 'react-icons/fa';
+import { FaHome, FaTimes, FaSpinner } from 'react-icons/fa';
 import { HiMiniSpeakerWave } from "react-icons/hi2";
 import { motion } from 'framer-motion';
 
@@ -144,11 +144,14 @@ const Dictionary: React.FC = () => {
   const router = useRouter();
   const [data, setData] = useState<Result[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const searchWord = async (word: string) => {
     if (!word) return;
     try {
+      setLoading(true);
       const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+      setLoading(false);
       if (!response.ok) {
         throw new Error('Word not found');
       }
@@ -156,6 +159,7 @@ const Dictionary: React.FC = () => {
       setData(data);
       setError(null);
     } catch (err: unknown) {
+      setLoading(false);
       setData(null);
       if (err instanceof Error) setError(err.message);
       else setError('An error occurred');
@@ -166,11 +170,8 @@ const Dictionary: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-transparent p-6 justify-between">
       <div className="flex flex-row justify-between mb-10">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white text-left">Dictionary</h1>
-        <button
-          className="bg-gray-800 text-white text-sm sm:text-lg px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg hover:bg-gray-700 flex items-center"
-          onClick={() => router.push('/')}
-        >
-          <FaHome />
+        <button onClick={() => router.push('/')} className="bg-gray-700 p-4 rounded-full shadow-md hover:bg-gray-600">
+          <FaHome size={28} />
         </button>
       </div>
 
@@ -180,6 +181,7 @@ const Dictionary: React.FC = () => {
           id="search"
           className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl h-fit px-4 py-3 rounded-xl shadow-lg text-black text-lg sm:text-xl bg-gray-300"
           placeholder="Enter word to search"
+          onKeyDown={(e) => e.key === 'Enter' && searchWord((document.getElementById('search') as HTMLInputElement).value)}
         />
         <motion.button
           className="mt-4 bg-blue-600 text-white text-lg px-6 py-3 rounded-full shadow-lg hover:bg-blue-700"
@@ -189,6 +191,7 @@ const Dictionary: React.FC = () => {
         >
           Search
         </motion.button>
+        {loading && <FaSpinner className="mt-4 animate-spin text-2xl" />}
       </div>
 
       {error && <ErrorModal error={error} setError={setError} />}
