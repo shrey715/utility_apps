@@ -12,6 +12,7 @@ This project currently includes the following mini apps:
 - **Currency Converter**: Convert currency from one unit to another. The exchange rates are fetched from Freecurrency API.
 - **Color Picker**: Pick colors from a color palette and copy the hex code to clipboard. Also allows to check different palettes.
 - **Weather App**: Get the current weather of a city. The weather data is fetched from OpenWeather API. Only works for cities in India for now.
+- **Markdown Editor**: Write markdown text and see the preview in real-time.
 
 More mini apps will be added in the future to enhance the utility of this project.
 

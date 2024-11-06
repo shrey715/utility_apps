@@ -90,6 +90,14 @@ const Home = () => {
         >
           Weather
         </motion.button>
+        <motion.button
+          className="bg-pink-500 text-white text-lg px-6 py-3 rounded-lg shadow-md hover:bg-pink-600"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => handleRedirect('/markdown-editor')}
+        >
+          Markdown Editor
+        </motion.button>
       </div>
       <footer className="text-center mt-8 text-gray-400">
         <p>
