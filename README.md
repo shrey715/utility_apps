@@ -58,4 +58,4 @@ You can start editing the pages by modifying the files in the `app` directory. T
 
 This project is deployed on Vercel. You can access the live version at the following link:
 
-[https://utility-apps-psi.vercel.app/](https://utility-apps-psi.vercel.app/)
+[https://shrey715-utility-apps.vercel.app/](https://shrey715-utility-apps.vercel.app/)
