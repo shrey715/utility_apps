@@ -13,6 +13,7 @@ This project currently includes the following mini apps:
 - **Color Picker**: Pick colors from a color palette and copy the hex code to clipboard. Also allows to check different palettes.
 - **Weather App**: Get the current weather of a city. The weather data is fetched from OpenWeather API. Only works for cities in India for now.
 - **Markdown Editor**: Write markdown text and see the preview in real-time.
+- **PDF Merger**: Merge multiple PDF files into a single PDF file.
 
 More mini apps will be added in the future to enhance the utility of this project.
 
