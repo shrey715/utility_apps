@@ -73,7 +73,7 @@ const PDFMerger = () => {
 
       <div className="w-full md:w-1/2 flex flex-col items-center space-y-4">
         <h2 className="text-2xl md:text-3xl font-bold">Drop PDF files here</h2>
-        <Dropzone onDrop={handleDrop}>
+        <Dropzone onDrop={handleDrop} accept={{ 'application/pdf': [] }}>
           {({ getRootProps, getInputProps, isDragActive }) => (
             <section
               className={`w-full p-6 border-4 border-dashed rounded-md flex flex-col items-center transition-all duration-200 cursor-copy ${
