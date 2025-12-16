@@ -17,7 +17,7 @@ export async function GET(request: Request): Promise<NextResponse> {
         const country_code = 'IN';
         const requestURL = `${base}q=${city},${country_code}&appid=${apiKey}&units=metric`;
 
-        console.log('Fetching weather data:', requestURL);
+        console.log('Fetching weather data for city:', city);
         const response = await fetch(requestURL);
 
         if (!response.ok) {
