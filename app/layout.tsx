@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { Inter, JetBrains_Mono } from "next/font/google";
+
+const GA_TRACKING_ID = "G-JVLX6K4ZVC";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -90,6 +93,19 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/icon.png" type="image/png" />
         <meta name="google-site-verification" content="" />
+        {/* Google Analytics */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_TRACKING_ID}');
+          `}
+        </Script>
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         <ThemeProvider
