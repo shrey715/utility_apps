@@ -7,7 +7,6 @@ export async function POST(request: Request): Promise<NextResponse> {
   const formData = await request.formData();
   const files = formData.getAll('file') as File[];
 
-  console.log(files);
   const mergedPdf = await PDFDocument.create();
 
   for (const file of files) {
@@ -18,7 +17,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const mergedPdfBytes = await mergedPdf.save();
-  return new NextResponse(mergedPdfBytes, {
+
+  return new NextResponse(Buffer.from(mergedPdfBytes), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': 'attachment; filename="merged.pdf"',

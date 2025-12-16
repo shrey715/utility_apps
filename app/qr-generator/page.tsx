@@ -1,23 +1,45 @@
 "use client";
-import React, { useRef } from 'react';
-import { FaHome } from 'react-icons/fa';
-import { useRouter } from 'next/navigation';
-import { QRCodeSVG } from 'qrcode.react';
-import { motion } from 'framer-motion';
 
-const Qrgenerator = () => {
-  const router = useRouter();
-  const [text, setText] = React.useState('');
+import { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
+import { Download, Copy, Check, QrCode } from "lucide-react";
+import { PageWrapper } from "@/components/layout/PageWrapper";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { cn } from "@/lib/utils";
+
+const sizeOptions = [
+  { label: "S", value: 128 },
+  { label: "M", value: 200 },
+  { label: "L", value: 300 },
+  { label: "XL", value: 400 },
+];
+
+export default function QrGenerator() {
+  const [text, setText] = useState("");
+  const [size, setSize] = useState(200);
+  const [fgColor, setFgColor] = useState("#000000");
+  const [bgColor, setBgColor] = useState("#ffffff");
+  const [copied, setCopied] = useState(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
+
+  const handleCopy = async () => {
+    if (text) {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const downloadSVG = () => {
     if (svgRef.current) {
       const svg = svgRef.current.outerHTML;
-      const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = 'qrcode.svg';
+      link.download = "qrcode.svg";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -25,116 +47,189 @@ const Qrgenerator = () => {
     }
   };
 
-  const triggerDownload = (imgURI: string, format: string) => {
-    const a = document.createElement('a');
-    a.download = `qrcode.${format}`;
-    a.target = '_blank';
-    a.href = imgURI;
-    a.dispatchEvent(new MouseEvent('click', {
-      view: window,
-      bubbles: false,
-      cancelable: true
-    }));
-  };
-
-  const downloadImage = (format: 'png' | 'jpeg' | 'jpg') => {
+  const downloadImage = (format: "png" | "jpeg") => {
     if (svgRef.current) {
       const svgNode = svgRef.current;
       const svgString = new XMLSerializer().serializeToString(svgNode);
-      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-      const DOMURL = window.URL || window.webkitURL || window;
-      const url = DOMURL.createObjectURL(svgBlob);
+      const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
 
       const image = new Image();
-      image.width = svgNode.width.baseVal.value;
-      image.height = svgNode.height.baseVal.value;
+      image.width = size;
+      image.height = size;
       image.src = url;
       image.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(image, 0, 0);
-        DOMURL.revokeObjectURL(url);
-
-        const imgURI = canvas.toDataURL(`image/${format}`).replace(`image/${format}`, 'image/octet-stream');
-        triggerDownload(imgURI, format);
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(0, 0, size, size);
+          ctx.drawImage(image, 0, 0, size, size);
+        }
+        URL.revokeObjectURL(url);
+        const imgURI = canvas.toDataURL(`image/${format}`);
+        const link = document.createElement("a");
+        link.download = `qrcode.${format}`;
+        link.href = imgURI;
+        link.click();
       };
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-transparent p-6">
-      <div className="flex flex-row justify-between mb-10">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white text-left">QR Generator</h1>
-        <button onClick={() => router.push('/')} className="bg-gray-700 p-4 rounded-full shadow-md hover:bg-gray-600">
-          <FaHome size={28} />
-        </button>
-      </div>
+    <PageWrapper title="QR Generator" showBack>
+      <div className="max-w-4xl mx-auto">
+        {/* Input Section */}
+        <Card className="mb-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center",
+              "bg-[#00d4ff] shadow-[0_4px_0_#00a9cc]"
+            )}>
+              <QrCode className="w-6 h-6 text-black" strokeWidth={2.5} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Enter Content</h2>
+              <p className="text-sm text-[#888]">Text, URL, or any data</p>
+            </div>
+          </div>
 
-      <div className="flex flex-col items-center justify-center mb-10">
-        <input
-          className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl h-fit px-4 py-3 rounded-xl shadow-lg text-black text-lg sm:text-xl bg-gray-300"
-          placeholder="Enter text to generate QR code"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-      </div>
+          <input
+            type="text"
+            placeholder="Type something..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className={cn(
+              "w-full px-4 py-3 rounded-xl text-lg font-medium",
+              "bg-[#252525] border-2 border-[#444] text-white",
+              "placeholder:text-[#666]",
+              "focus:outline-none focus:border-[#00d4ff]",
+              "transition-colors duration-200"
+            )}
+          />
 
-      <div className="flex flex-col items-center justify-center gap-5">
-        <motion.div
-          className="flex flex-col items-center justify-center bg-white p-6 rounded-lg shadow-lg w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl aspect-square"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          {text && (
-            <QRCodeSVG
-              value={text}
-              className="w-full h-full"
-              style={{ maxWidth: '100%', height: 'auto' }}
-              ref={svgRef}
-            />
+          {/* Size Selector */}
+          <div className="mt-6">
+            <label className="block text-sm font-bold text-[#888] mb-3">Size</label>
+            <div className="flex gap-2">
+              {sizeOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setSize(opt.value)}
+                  className={cn(
+                    "w-12 h-12 rounded-xl font-bold text-lg",
+                    "transition-all duration-100",
+                    size === opt.value
+                      ? "bg-[#00d4ff] text-black shadow-[0_4px_0_#00a9cc] -translate-y-0.5"
+                      : "bg-[#252525] border-2 border-[#444] text-white hover:border-[#555]"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Color Pickers */}
+          <div className="grid grid-cols-2 gap-4 mt-6">
+            <div>
+              <label className="block text-sm font-bold text-[#888] mb-3">Foreground</label>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-12 h-12 rounded-xl border-2 border-[#444] cursor-pointer overflow-hidden"
+                  style={{ backgroundColor: fgColor }}
+                >
+                  <input
+                    type="color"
+                    value={fgColor}
+                    onChange={(e) => setFgColor(e.target.value)}
+                    className="w-full h-full opacity-0 cursor-pointer"
+                  />
+                </div>
+                <span className="text-[#888] font-mono text-sm font-bold">{fgColor.toUpperCase()}</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-[#888] mb-3">Background</label>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-12 h-12 rounded-xl border-2 border-[#444] cursor-pointer overflow-hidden"
+                  style={{ backgroundColor: bgColor }}
+                >
+                  <input
+                    type="color"
+                    value={bgColor}
+                    onChange={(e) => setBgColor(e.target.value)}
+                    className="w-full h-full opacity-0 cursor-pointer"
+                  />
+                </div>
+                <span className="text-[#888] font-mono text-sm font-bold">{bgColor.toUpperCase()}</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* QR Display */}
+        <AnimatePresence mode="wait">
+          {text ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", duration: 0.3 }}
+            >
+              <Card className="text-center">
+                <div className="flex flex-col items-center">
+                  {/* QR Code */}
+                  <div
+                    className="p-6 rounded-2xl mb-6 border-2 border-[#333]"
+                    style={{ backgroundColor: bgColor }}
+                  >
+                    <QRCodeSVG
+                      value={text}
+                      size={size}
+                      fgColor={fgColor}
+                      bgColor={bgColor}
+                      ref={svgRef}
+                      level="H"
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <Button color="cyan" onClick={downloadSVG}>
+                      <Download className="w-4 h-4" /> SVG
+                    </Button>
+                    <Button color="green" onClick={() => downloadImage("png")}>
+                      <Download className="w-4 h-4" /> PNG
+                    </Button>
+                    <Button color="orange" onClick={() => downloadImage("jpeg")}>
+                      <Download className="w-4 h-4" /> JPEG
+                    </Button>
+                    <Button variant="secondary" onClick={handleCopy}>
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copied ? "Copied!" : "Copy"}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          ) : (
+            <Card hover={false} className="text-center py-16">
+              <div className={cn(
+                "w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center",
+                "bg-[#252525] border-2 border-[#444]"
+              )}>
+                <QrCode className="w-10 h-10 text-[#666]" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">No QR Code Yet</h3>
+              <p className="text-[#888]">Enter some text above to generate</p>
+            </Card>
           )}
-        </motion.div>
-        
-        {text && (
-          <motion.div
-            className="mt-4 flex flex-wrap justify-center gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <button
-              className="bg-blue-600 text-white text-lg px-6 py-3 rounded-full shadow-lg hover:bg-blue-700"
-              onClick={downloadSVG}
-            >
-              Download SVG
-            </button>
-            <button
-              className="bg-green-600 text-white text-lg px-6 py-3 rounded-full shadow-lg hover:bg-green-700"
-              onClick={() => downloadImage('png')}
-            >
-              Download PNG
-            </button>
-            <button
-              className="bg-yellow-600 text-white text-lg px-6 py-3 rounded-full shadow-lg hover:bg-yellow-700"
-              onClick={() => downloadImage('jpeg')}
-            >
-              Download JPEG
-            </button>
-            <button
-              className="bg-red-600 text-white text-lg px-6 py-3 rounded-full shadow-lg hover:bg-red-700"
-              onClick={() => downloadImage('jpg')}
-            >
-              Download JPG
-            </button>
-          </motion.div>
-        )}
+        </AnimatePresence>
       </div>
-    </div>
+    </PageWrapper>
   );
-};
-
-export default Qrgenerator;
+}

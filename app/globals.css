@@ -1,43 +1,184 @@
+@import './styles/design-tokens.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base Styles */
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* Solid Background Pattern - Subtle Grid */
+.bg-game-grid {
+  background-color: var(--bg-primary);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Solid Card Style */
+.card-solid {
+  background: var(--bg-card);
+  border: 3px solid var(--border-default);
+  border-radius: var(--radius-xl);
+}
+
+.card-solid:hover {
+  border-color: var(--border-hover);
+}
+
+/* Playful Button Press Effect */
+.btn-press {
+  position: relative;
+  transform: translateY(0);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.btn-press:hover {
+  transform: translateY(-2px);
+}
+
+.btn-press:active {
+  transform: translateY(4px);
+  box-shadow: none !important;
+}
+
+/* Color Accent Classes */
+.accent-red {
+  background: var(--accent-red);
+  box-shadow: var(--shadow-red);
+}
+
+.accent-orange {
+  background: var(--accent-orange);
+  box-shadow: var(--shadow-orange);
+}
+
+.accent-yellow {
+  background: var(--accent-yellow);
+  color: #000;
+  box-shadow: var(--shadow-yellow);
+}
+
+.accent-green {
+  background: var(--accent-green);
+  box-shadow: var(--shadow-green);
+}
+
+.accent-cyan {
+  background: var(--accent-cyan);
+  box-shadow: var(--shadow-cyan);
+}
+
+.accent-blue {
+  background: var(--accent-blue);
+  box-shadow: var(--shadow-blue);
+}
+
+.accent-purple {
+  background: var(--accent-purple);
+  box-shadow: var(--shadow-purple);
+}
+
+.accent-pink {
+  background: var(--accent-pink);
+  box-shadow: var(--shadow-pink);
+}
+
+/* Icon Badge */
+.icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  font-weight: bold;
+}
+
+/* Container */
+.container-app {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+@media (min-width: 640px) {
+  .container-app {
+    padding: 0 24px;
   }
 }
 
+@media (min-width: 1024px) {
+  .container-app {
+    padding: 0 32px;
+  }
+}
+
+/* Custom Scrollbar - Solid */
 ::-webkit-scrollbar {
-  width: 12px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--background);
+  background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--foreground);
+  background: var(--border-default);
+  border-radius: 5px;
 }
 
-::-webkit-scrollbar-track-piece {
-  background: var(--background);
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-cyan);
+  color: #000;
+}
+
+/* Focus States - Bold & Visible */
+:focus-visible {
+  outline: 3px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+/* Animations */
+.animate-bounce-in {
+  animation: bounce-in 0.4s ease-out;
+}
+
+.animate-wiggle {
+  animation: wiggle 0.3s ease-in-out;
+}
+
+.animate-pop {
+  animation: pop 0.2s ease-in-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Pixel-style underline */
+.pixel-underline {
+  text-decoration: none;
+  border-bottom: 3px solid currentColor;
+}
+
+/* Tag/Badge Style */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 2px solid transparent;
 }

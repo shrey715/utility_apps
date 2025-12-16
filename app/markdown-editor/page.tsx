@@ -1,117 +1,229 @@
 "use client";
-import { FaHome } from 'react-icons/fa';
-import { useRouter } from 'next/navigation';
-import Markdown from 'react-markdown';
-import { useState, ChangeEvent, ReactNode } from 'react';
-import remarkGfm from 'remark-gfm';
-import rehypeKatex from 'rehype-katex';
-import remarkMath from 'remark-math';
-import 'katex/dist/katex.min.css';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-interface CodeProps {
-  children?: ReactNode;
-  className?: string;
-  [key: string]: unknown;
-}
+import { useState, ChangeEvent } from "react";
+import { motion } from "framer-motion";
+import { FileText, Download, Bold, Italic, List, Link, Code, Image as ImageIcon, Heading, Eye, EyeOff, Upload } from "lucide-react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
+import "katex/dist/katex.min.css";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { PageWrapper } from "@/components/layout/PageWrapper";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 
-const CodeComponent = ({ children, className, ...rest }: CodeProps) => {
-  if (!children) return <code {...rest} className={className}></code>;
+const defaultContent = `# Welcome to the Markdown Editor
 
-  const match = /language-(\w+)/.exec(className || '');
+This is a **real-time** markdown editor with _live preview_.
+
+## Features
+- GitHub Flavored Markdown
+- Math equations with KaTeX
+- Syntax highlighted code blocks
+
+### Code Example
+\`\`\`javascript
+const greeting = "Hello, World!";
+console.log(greeting);
+\`\`\`
+
+### Math Example
+Inline: $E = mc^2$
+
+Block:
+$$
+\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
+$$
+
+---
+
+Start editing on the left to see changes here!
+`;
+
+const ToolbarButton = ({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    title={label}
+    className="p-2 rounded-lg hover:bg-[#333] text-[#888] hover:text-white transition-colors"
+  >
+    <Icon className="w-4 h-4" />
+  </button>
+);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CodeBlock = (props: any) => {
+  const { children, className, ...rest } = props;
+  if (!children) return <code {...rest} className={className} />;
+  const match = /language-(\w+)/.exec(className || "");
   return match ? (
     <SyntaxHighlighter
       {...rest}
       PreTag="div"
       language={match[1]}
-      style={dark}
+      style={oneDark}
+      customStyle={{ margin: 0, borderRadius: "0.75rem", fontSize: "0.875rem" }}
     >
-      {String(children).replace(/\n$/, '')}
+      {String(children).replace(/\n$/, "")}
     </SyntaxHighlighter>
   ) : (
-    <code {...rest} className={className}>
+    <code
+      {...rest}
+      className={cn("px-1.5 py-0.5 rounded bg-[#333] text-[#ff6b9d] text-sm font-mono", className)}
+    >
       {children}
     </code>
   );
 };
 
-const MarkdownEditor = () => {
-  const [markdown, setMarkdown] = useState<string>('# Hello World\n\nThis is a sample markdown editor.\n\n- **Bold text**\n- _Italic text_\n\n[Click here for more info](https://www.example.com)\n\n```js\nconsole.log("Hello, World!");\n```');
-  const router = useRouter();
+export default function MarkdownEditor() {
+  const [markdown, setMarkdown] = useState(defaultContent);
+  const [showPreview, setShowPreview] = useState(true);
+  const [fileName, setFileName] = useState("document");
 
-  const handleMarkdownChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setMarkdown(e.target.value);
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => setMarkdown(e.target.value);
+
+  const insertText = (before: string, after = "") => {
+    const textarea = document.querySelector("textarea");
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = markdown.substring(start, end);
+    setMarkdown(markdown.substring(0, start) + before + selected + after + markdown.substring(end));
   };
 
   const downloadMarkdown = () => {
-    const element = document.createElement("a");
-    const file = new Blob([markdown], { type: 'text/markdown' });
-    element.href = URL.createObjectURL(file);
-    element.download = "markdown.md";
-    document.body.appendChild(element); 
-    element.click();
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${fileName || "document"}.md`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        setMarkdown(content);
+        setFileName(file.name.replace(/\.md$/, ""));
+      };
+      reader.readAsText(file);
+    }
+    e.target.value = "";
   };
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-8 flex flex-col items-center text-white space-y-8">
-      <header className="flex justify-between items-center w-full mb-6">
-        <h1 className="text-3xl md:text-5xl font-bold flex items-center gap-2">
-          Markdown Editor
-        </h1>
-        <div className="flex gap-4">
-          <button
-            onClick={() => router.push('/')}
-            className="bg-gray-700 p-3 rounded-full shadow-md hover:bg-gray-600 transition-all duration-200"
-          >
-            <FaHome size={24} />
-          </button>
-          <button
-            onClick={downloadMarkdown}
-            className="bg-green-700 p-3 rounded-full shadow-md hover:bg-green-600 transition-all duration-200"
-          >
-            Download
-          </button>
-        </div>
-      </header>
+    <PageWrapper title="Markdown" showBack>
+      <div className="flex flex-col" style={{ height: "calc(100vh - 200px)", minHeight: "400px" }}>
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 p-3 rounded-xl bg-[#1e1e1e] border-2 border-[#333] flex-shrink-0">
+          {/* Formatting buttons */}
+          <div className="flex items-center gap-1 overflow-x-auto">
+            <ToolbarButton icon={Bold} label="Bold" onClick={() => insertText("**", "**")} />
+            <ToolbarButton icon={Italic} label="Italic" onClick={() => insertText("_", "_")} />
+            <ToolbarButton icon={Heading} label="Heading" onClick={() => insertText("## ")} />
+            <ToolbarButton icon={List} label="List" onClick={() => insertText("- ")} />
+            <ToolbarButton icon={Link} label="Link" onClick={() => insertText("[", "](url)")} />
+            <ToolbarButton icon={Code} label="Code" onClick={() => insertText("`", "`")} />
+            <ToolbarButton icon={ImageIcon} label="Image" onClick={() => insertText("![alt](", ")")} />
+          </div>
 
-      <div className="flex flex-col md:flex-row gap-6 w-full">
-        <div className="w-full md:w-1/2 h-64 md:h-auto bg-gray-800 rounded-lg shadow-lg p-4">
-          <textarea
-            value={markdown}
-            onChange={handleMarkdownChange}
-            className="w-full h-full bg-transparent text-white resize-none outline-none placeholder-gray-400"
-            placeholder="Type your markdown here..."
-          />
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            {/* File name input */}
+            <input
+              type="text"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              placeholder="filename"
+              className="w-24 sm:w-32 px-2 py-1 rounded-lg bg-[#252525] border border-[#444] text-white text-sm focus:outline-none focus:border-[#ff6b9d]"
+            />
+            
+            {/* Upload button */}
+            <label className="cursor-pointer">
+              <input type="file" accept=".md,.txt" onChange={handleFileUpload} className="hidden" />
+              <div className="p-2 rounded-lg bg-[#252525] border-2 border-[#444] text-white hover:border-[#555] transition-colors">
+                <Upload className="w-4 h-4" />
+              </div>
+            </label>
+
+            {/* Preview toggle */}
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all",
+                showPreview
+                  ? "bg-[#ff6b9d] text-white shadow-[0_3px_0_#cc567e]"
+                  : "bg-[#252525] border-2 border-[#444] text-white hover:border-[#555]"
+              )}
+            >
+              {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <span className="hidden sm:inline">{showPreview ? "Hide" : "Show"}</span>
+            </button>
+            
+            {/* Download button */}
+            <Button color="pink" size="sm" onClick={downloadMarkdown}>
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">.md</span>
+            </Button>
+          </div>
         </div>
 
-        <div className="w-full md:w-1/2 h-64 md:h-auto bg-gray-800 rounded-lg shadow-lg p-4 prose prose-invert max-w-none overflow-hidden">
-          <Markdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-            components={{
-              h1: ({ ...props }) => <h1 className="text-3xl md:text-4xl font-bold text-blue-300 mb-4" {...props} />,
-              h2: ({ ...props }) => <h2 className="text-2xl font-semibold text-blue-400 mb-4" {...props} />,
-              h3: ({ ...props }) => <h3 className="text-xl font-semibold text-blue-500 mb-3" {...props} />,
-              p: ({ ...props }) => <p className="text-gray-200 mb-4 leading-relaxed" {...props} />,
-              a: ({ ...props }) => (
-                <a
-                  className="text-green-400 underline hover:text-green-300 transition-colors duration-150"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  {...props}
-                />
-              ),
-              li: ({ ...props }) => <li className="list-disc list-inside text-gray-200 mb-2" {...props} />,
-              code: ({ ...props }) => <CodeComponent {...props} />,
-            }}
-          >
-            {markdown}
-          </Markdown>
+        {/* Editor & Preview */}
+        <div className={cn(
+          "flex-1 grid gap-4 min-h-0",
+          showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
+        )}>
+          {/* Editor */}
+          <div className="rounded-xl bg-[#1e1e1e] border-2 border-[#333] overflow-hidden flex flex-col min-h-0">
+            <div className="px-4 py-2 border-b-2 border-[#333] flex items-center gap-2 flex-shrink-0">
+              <FileText className="w-4 h-4 text-[#888]" />
+              <span className="text-sm font-bold text-[#888]">Editor</span>
+            </div>
+            <textarea
+              value={markdown}
+              onChange={handleChange}
+              className="flex-1 w-full p-4 bg-transparent text-white resize-none outline-none font-mono text-sm leading-relaxed placeholder:text-[#666] min-h-0"
+              placeholder="Start typing your markdown..."
+              spellCheck={false}
+            />
+          </div>
+
+          {/* Preview */}
+          {showPreview && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="rounded-xl bg-[#1e1e1e] border-2 border-[#333] overflow-hidden flex flex-col min-h-0"
+            >
+              <div className="px-4 py-2 border-b-2 border-[#333] flex items-center gap-2 flex-shrink-0">
+                <FileText className="w-4 h-4 text-[#888]" />
+                <span className="text-sm font-bold text-[#888]">Preview</span>
+              </div>
+              <div
+                className="flex-1 p-4 overflow-auto prose prose-invert prose-sm max-w-none
+                  prose-headings:text-white prose-headings:font-bold
+                  prose-h1:text-3xl prose-h1:border-b-2 prose-h1:border-[#333] prose-h1:pb-2
+                  prose-p:text-[#ccc] prose-a:text-[#00d4ff] prose-strong:text-white
+                  prose-li:text-[#ccc] prose-blockquote:border-l-[#ff6b9d] prose-blockquote:text-[#888]
+                  prose-hr:border-[#333]"
+              >
+                <Markdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={{ code: CodeBlock }}
+                >
+                  {markdown}
+                </Markdown>
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
-    </div>
+    </PageWrapper>
   );
-};
-
-export default MarkdownEditor;
+}

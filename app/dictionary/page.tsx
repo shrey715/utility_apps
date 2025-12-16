@@ -1,9 +1,12 @@
 "use client";
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { FaHome, FaTimes, FaSpinner } from 'react-icons/fa';
-import { HiMiniSpeakerWave } from "react-icons/hi2";
-import { motion } from 'framer-motion';
+
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Volume2, BookOpen, ChevronDown, ChevronUp, Clock, X } from "lucide-react";
+import { PageWrapper } from "@/components/layout/PageWrapper";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { cn } from "@/lib/utils";
 
 interface Phonetic {
   text: string;
@@ -30,178 +33,263 @@ interface Result {
   sourceUrls: string[];
 }
 
-interface ResponseModalProps {
-  data: Result[];
-  setData: React.Dispatch<React.SetStateAction<Result[] | null>>;
-}
-
-interface ErrorModalProps {
-  error: string;
-  setError: React.Dispatch<React.SetStateAction<string | null>>;
-}
-
-const ErrorModal: React.FC<ErrorModalProps> = ({ error, setError }) => {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-slate-200 text-neutral-950 p-6 rounded-lg shadow-lg max-w-3xl w-full border-2 border-white">
-        <div className="flex flex-row justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Error</h2>
-          <button
-            className="text-xl text-neutral-950 hover:text-neutral-900"
-            onClick={() => setError(null)}
-          >
-            <FaTimes />
-          </button>
-        </div>
-        <p className="text-lg">{error}</p>
-      </div>
-    </div>
-  );
-}
-
-const ResponseModal: React.FC<ResponseModalProps> = ({ data, setData }) => {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-slate-200 text-neutral-950 p-6 rounded-lg shadow-lg max-w-3xl w-full border-2 border-white overflow-y-auto max-h-[90vh]">
-        <div className="flex flex-row justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Results</h2>
-          <button
-            className="text-xl text-neutral-950 hover:text-neutral-900"
-            onClick={() => setData(null)}
-          >
-            <FaTimes />
-          </button>
-        </div>
-        <div className="flex flex-col gap-4 mt-4">
-          {data.map((result, index) => (
-            <div key={index} className="flex flex-col gap-4 p-4 bg-white rounded-lg shadow-md">
-              <div className="flex flex-row items-center justify-between border-b pb-2 mb-2">
-                <h3 className="text-lg font-semibold text-blue-700">{result.word}</h3>
-                {result.phonetics.some(phonetic => phonetic.audio) && (
-                  <button
-                    className="text-xl text-neutral-950 hover:text-neutral-900"
-                    onClick={() => {
-                      const audioUrl = result.phonetics.find(phonetic => phonetic.audio)?.audio;
-                      if (audioUrl) {
-                        const audio = new Audio(audioUrl);
-                        audio.play();
-                      }
-                    }}
-                  >
-                    <HiMiniSpeakerWave />
-                  </button>
-                )}
-              </div>
-              <p className="text-sm italic text-gray-600">Phonetic: {result.phonetic}</p>
-              
-              {result.meanings.map((meaning, meaningIndex) => (
-                <div key={meaningIndex} className="flex flex-col gap-2 border-t pt-2 bg-gray-100 p-2 rounded-md">
-                  <p className="italic font-semibold text-green-700">{meaning.partOfSpeech}</p>
-                  
-                  {meaning.definitions.map((definition, defIndex) => (
-                    <div key={defIndex} className="mb-2">
-                      <p className="text-sm">{definition.definition}</p>
-                      {definition.example && (
-                        <p className="text-sm text-gray-600 italic">Example: {definition.example}</p>
-                      )}
-                    </div>
-                  ))}
-
-                  {meaning.synonyms.length > 0 && (
-                    <p className="text-sm"><strong>Synonyms:</strong> {meaning.synonyms.join(", ")}</p>
-                  )}
-                  {meaning.antonyms.length > 0 && (
-                    <p className="text-sm"><strong>Antonyms:</strong> {meaning.antonyms.join(", ")}</p>
-                  )}
-                </div>
-              ))}
-
-              {result.sourceUrls && (
-                <div className="mt-4">
-                  <p className="text-sm font-semibold">Source:</p>
-                  {result.sourceUrls.map((url, urlIndex) => (
-                    <a
-                      key={urlIndex}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      {url}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+const partOfSpeechColors: { [key: string]: { bg: string; shadow: string; text: string } } = {
+  noun: { bg: "bg-[#3742fa]", shadow: "shadow-[0_3px_0_#2c35c8]", text: "text-white" },
+  verb: { bg: "bg-[#2ed573]", shadow: "shadow-[0_3px_0_#25aa5c]", text: "text-black" },
+  adjective: { bg: "bg-[#a55eea]", shadow: "shadow-[0_3px_0_#844bbb]", text: "text-white" },
+  adverb: { bg: "bg-[#ff6b35]", shadow: "shadow-[0_3px_0_#cc5529]", text: "text-white" },
+  pronoun: { bg: "bg-[#00d4ff]", shadow: "shadow-[0_3px_0_#00a9cc]", text: "text-black" },
+  preposition: { bg: "bg-[#ffd93d]", shadow: "shadow-[0_3px_0_#ccae31]", text: "text-black" },
+  conjunction: { bg: "bg-[#ff6b9d]", shadow: "shadow-[0_3px_0_#cc567e]", text: "text-white" },
+  interjection: { bg: "bg-[#ff4757]", shadow: "shadow-[0_3px_0_#cc3a47]", text: "text-white" },
 };
 
-const Dictionary: React.FC = () => {
-  const router = useRouter();
-  const [data, setData] = useState<Result[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+const defaultPOS = { bg: "bg-[#666]", shadow: "shadow-[0_3px_0_#444]", text: "text-white" };
+
+export default function Dictionary() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Result[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [expandedMeanings, setExpandedMeanings] = useState<{ [key: string]: boolean }>({});
+
+  useEffect(() => {
+    const saved = localStorage.getItem("dictionary-history");
+    if (saved) setHistory(JSON.parse(saved));
+  }, []);
 
   const searchWord = async (word: string) => {
-    if (!word) return;
+    if (!word.trim()) return;
+
+    setLoading(true);
+    setError(null);
+    setResults(null);
+    setExpandedMeanings({});
+
     try {
-      setLoading(true);
-      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
-      setLoading(false);
-      if (!response.ok) {
-        throw new Error('Word not found');
-      }
+      const response = await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${word.trim()}`
+      );
+
+      if (!response.ok) throw new Error("Word not found!");
+
       const data: Result[] = await response.json();
-      setData(data);
-      setError(null);
-    } catch (err: unknown) {
+      setResults(data);
+
+      const newHistory = [word.trim(), ...history.filter((h) => h !== word.trim())].slice(0, 8);
+      setHistory(newHistory);
+      localStorage.setItem("dictionary-history", JSON.stringify(newHistory));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error");
+    } finally {
       setLoading(false);
-      setData(null);
-      if (err instanceof Error) setError(err.message);
-      else setError('An error occurred');
     }
   };
 
+  const playAudio = (audioUrl: string) => new Audio(audioUrl).play();
+
+  const toggleMeaning = (key: string) => {
+    setExpandedMeanings((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   return (
-    <div className="flex flex-col min-h-screen bg-transparent p-6 justify-between">
-      <div className="flex flex-row justify-between mb-10">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white text-left">Dictionary</h1>
-        <button onClick={() => router.push('/')} className="bg-gray-700 p-4 rounded-full shadow-md hover:bg-gray-600">
-          <FaHome size={28} />
-        </button>
+    <PageWrapper title="Dictionary" showBack>
+      <div className="max-w-3xl mx-auto">
+        {/* Search */}
+        <Card className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center",
+              "bg-[#2ed573] shadow-[0_4px_0_#25aa5c]"
+            )}>
+              <BookOpen className="w-6 h-6 text-black" strokeWidth={2.5} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Search Word</h2>
+              <p className="text-sm text-[#888]">Press Enter to search</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#666]" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && searchWord(query)}
+                placeholder="Type a word..."
+                className={cn(
+                  "w-full pl-12 pr-4 py-3 rounded-xl font-medium",
+                  "bg-[#252525] border-2 border-[#444] text-white",
+                  "placeholder:text-[#666]",
+                  "focus:outline-none focus:border-[#2ed573]"
+                )}
+              />
+            </div>
+            <Button color="green" onClick={() => searchWord(query)} isLoading={loading}>
+              Search
+            </Button>
+          </div>
+
+          {/* History */}
+          {history.length > 0 && (
+            <div className="mt-4 pt-4 border-t-2 border-[#333]">
+              <div className="flex items-center gap-2 text-[#888] text-sm mb-2">
+                <Clock className="w-4 h-4" />
+                <span className="font-bold">Recent</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {history.map((word) => (
+                  <button
+                    key={word}
+                    onClick={() => { setQuery(word); searchWord(word); }}
+                    className="px-3 py-1.5 rounded-lg bg-[#252525] border-2 border-[#444] text-white text-sm font-medium hover:border-[#555]"
+                  >
+                    {word}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Error */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
+              <Card className="mb-6 bg-[#ff4757]/10 border-[#ff4757]">
+                <div className="flex items-center gap-3">
+                  <X className="w-5 h-5 text-[#ff4757]" />
+                  <p className="text-[#ff4757] font-bold">{error}</p>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Results */}
+        <AnimatePresence mode="wait">
+          {results && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-6"
+            >
+              {results.map((result, resultIndex) => (
+                <motion.div
+                  key={resultIndex}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: resultIndex * 0.1 }}
+                >
+                  <Card>
+                    {/* Word Header */}
+                    <div className="flex items-start justify-between mb-6">
+                      <div>
+                        <h2 className="text-3xl font-black text-white mb-1">{result.word}</h2>
+                        {result.phonetic && (
+                          <span className="text-[#888] text-lg">{result.phonetic}</span>
+                        )}
+                      </div>
+                      {result.phonetics.some((p) => p.audio) && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            const audio = result.phonetics.find((p) => p.audio)?.audio;
+                            if (audio) playAudio(audio);
+                          }}
+                        >
+                          <Volume2 className="w-4 h-4" /> Listen
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Meanings */}
+                    <div className="space-y-4">
+                      {result.meanings.map((meaning, meaningIndex) => {
+                        const key = `${resultIndex}-${meaningIndex}`;
+                        const isExpanded = expandedMeanings[key] !== false;
+                        const hasMore = meaning.definitions.length > 2;
+                        const colors = partOfSpeechColors[meaning.partOfSpeech] || defaultPOS;
+
+                        return (
+                          <div
+                            key={meaningIndex}
+                            className="p-4 rounded-xl bg-[#252525] border-2 border-[#333]"
+                          >
+                            {/* Part of Speech */}
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className={cn(
+                                "px-3 py-1 rounded-lg text-sm font-bold",
+                                colors.bg, colors.shadow, colors.text
+                              )}>
+                                {meaning.partOfSpeech}
+                              </span>
+                              <span className="text-xs text-[#666] font-bold">
+                                {meaning.definitions.length} definitions
+                              </span>
+                            </div>
+
+                            {/* Definitions */}
+                            <ol className="space-y-3 list-decimal list-inside">
+                              {meaning.definitions
+                                .slice(0, isExpanded ? undefined : 2)
+                                .map((def, defIndex) => (
+                                  <li key={defIndex} className="text-[#ccc]">
+                                    <span className="text-white">{def.definition}</span>
+                                    {def.example && (
+                                      <p className="mt-1 pl-5 text-[#888] italic">
+                                        &ldquo;{def.example}&rdquo;
+                                      </p>
+                                    )}
+                                  </li>
+                                ))}
+                            </ol>
+
+                            {hasMore && (
+                              <button
+                                onClick={() => toggleMeaning(key)}
+                                className="mt-3 text-sm text-[#00d4ff] font-bold flex items-center gap-1 hover:underline"
+                              >
+                                {isExpanded ? (
+                                  <><ChevronUp className="w-4 h-4" /> Show less</>
+                                ) : (
+                                  <><ChevronDown className="w-4 h-4" /> Show more</>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Empty */}
+        {!loading && !results && !error && (
+          <Card hover={false} className="text-center py-16">
+            <div className={cn(
+              "w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center",
+              "bg-[#252525] border-2 border-[#444]"
+            )}>
+              <BookOpen className="w-10 h-10 text-[#666]" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Search for a Word</h3>
+            <p className="text-[#888]">Enter any word to see its definition</p>
+          </Card>
+        )}
       </div>
-
-      <div className="flex flex-col items-center justify-center mb-10 w-full">
-        <input
-          type="text"
-          id="search"
-          className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl h-fit px-4 py-3 rounded-xl shadow-lg text-black text-lg sm:text-xl bg-gray-300"
-          placeholder="Enter word to search"
-          onKeyDown={(e) => e.key === 'Enter' && searchWord((document.getElementById('search') as HTMLInputElement).value)}
-        />
-        <motion.button
-          className="mt-4 bg-blue-600 text-white text-lg px-6 py-3 rounded-full shadow-lg hover:bg-blue-700"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => searchWord((document.getElementById('search') as HTMLInputElement).value)}
-        >
-          Search
-        </motion.button>
-        {loading && <FaSpinner className="mt-4 animate-spin text-2xl" />}
-      </div>
-
-      {error && <ErrorModal error={error} setError={setError} />}
-      {data && <ResponseModal data={data} setData={setData} />}
-
-      <footer className="flex flex-row items-center justify-center text-gray-400 mt-10">
-        Powered by Free Dictionary API
-      </footer>
-    </div>
+    </PageWrapper>
   );
-};
-
-export default Dictionary;
+}

@@ -1,177 +1,163 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { FaHome, FaCopy, FaPlus, FaPalette, FaTrash } from 'react-icons/fa';
-import { useRouter } from 'next/navigation';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
-import { HexColorPicker } from 'react-colorful';
 
-interface Palette {
-  name: string;
-  colors: string[];
-}
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Palette, Plus, Trash2, Check, Download } from "lucide-react";
+import { HexColorPicker } from "react-colorful";
+import { CopyToClipboard } from "react-copy-to-clipboard";
+import { PageWrapper } from "@/components/layout/PageWrapper";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { cn } from "@/lib/utils";
 
-const ColorBox: React.FC<{ color: string; setCopied: React.Dispatch<React.SetStateAction<boolean>> }> = ({ color, setCopied }) => (
-  <div className="w-full max-w-xs h-56 rounded-lg shadow-lg border-2 border-white relative flex justify-center items-center" style={{ backgroundColor: color }}>
-    <p className="text-2xl font-semibold text-white mix-blend-luminosity">{color}</p>
-    <CopyToClipboard text={color} onCopy={() => setCopied(true)}>
-      <button className="absolute top-2 right-2 bg-gray-700 text-white p-2 rounded-full shadow hover:bg-gray-600">
-        <FaCopy size={16} />
-      </button>
-    </CopyToClipboard>
-  </div>
-);
+interface PaletteData { id: string; name: string; colors: string[]; }
 
-const PaletteItem: React.FC<{ color: string; onDelete: () => void; onCopy: () => void }> = ({ color, onDelete, onCopy }) => (
-  <div className="relative">
-    <CopyToClipboard text={color} onCopy={onCopy}>
-      <div
-        className="w-12 h-12 rounded-full cursor-pointer border border-gray-500 flex items-center justify-center"
-        style={{ backgroundColor: color }}
-        title={color}
-      >
-        <FaCopy className="text-white opacity-75" size={12} />
-      </div>
-    </CopyToClipboard>
-    <button
-      onClick={onDelete}
-      className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow hover:bg-red-600"
-    >
-      <FaTrash size={10} />
-    </button>
-  </div>
-);
+const STORAGE_KEY = "color-picker-palettes";
 
-const Palette: React.FC<{
-  palette: Palette;
-  onAddColor: () => void;
-  onDeletePalette: () => void;
-  onRenamePalette: (newName: string) => void;
-  onDeleteColor: (colorIndex: number) => void;
-  onColorCopy: () => void;
-}> = ({ palette, onAddColor, onDeletePalette, onRenamePalette, onDeleteColor, onColorCopy }) => (
-  <div className="w-full bg-gray-800 p-6 rounded-lg shadow-md space-y-4">
-    <div className="flex justify-between items-center">
-      <div className="flex items-center gap-2 flex-wrap">
-        <FaPalette />
-        <input
-          type="text"
-          value={palette.name}
-          onChange={(e) => onRenamePalette(e.target.value)}
-          className="bg-transparent text-xl font-semibold text-white focus:outline-none w-full sm:w-auto border-b focus:border-b-2"
-        />
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={onAddColor}
-          className="text-lg bg-gray-700 px-5 py-2 rounded shadow hover:bg-gray-600"
-        >
-          <FaPlus />
-        </button>
-        <button
-          onClick={onDeletePalette}
-          className="text-lg bg-red-500 px-5 py-2 rounded shadow hover:bg-red-600"
-        >
-          <FaTrash />
-        </button>
-      </div>
-    </div>
-
-    <div className="flex flex-wrap gap-4">
-      {palette.colors.map((color, colorIndex) => (
-        <PaletteItem
-          key={colorIndex}
-          color={color}
-          onDelete={() => onDeleteColor(colorIndex)}
-          onCopy={onColorCopy}
-        />
-      ))}
-    </div>
-  </div>
-);
-
-const ColorPicker: React.FC = () => {
-  const router = useRouter();
-  const [color, setColor] = useState('#121212');
-  const [palettes, setPalettes] = useState<Palette[]>([{ name: 'Palette 1', colors: [] }]);
-  const [copied, setCopied] = useState(false);
-
-  const handleColorChange = (newColor: string) => {
-    setColor(newColor);
-  };
-
-  const addPalette = () => {
-    setPalettes([...palettes, { name: `Palette ${palettes.length + 1}`, colors: [] }]);
-  };
-
-  const addColorToPalette = (index: number) => {
-    const newPalettes = [...palettes];
-    newPalettes[index].colors.push(color);
-    setPalettes(newPalettes);
-  };
-
-  const deleteColorFromPalette = (paletteIndex: number, colorIndex: number) => {
-    const newPalettes = [...palettes];
-    newPalettes[paletteIndex].colors.splice(colorIndex, 1);
-    setPalettes(newPalettes);
-  };
-
-  const deletePalette = (index: number) => {
-    const newPalettes = palettes.filter((_, i) => i !== index);
-    setPalettes(newPalettes);
-  };
-
-  const handlePaletteNameChange = (index: number, newName: string) => {
-    const newPalettes = [...palettes];
-    newPalettes[index].name = newName;
-    setPalettes(newPalettes);
-  };
+export default function ColorPicker() {
+  const [color, setColor] = useState("#a55eea");
+  const [palettes, setPalettes] = useState<PaletteData[]>([]);
+  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
-    if (copied) {
-      const timer = setTimeout(() => setCopied(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [copied]);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) setPalettes(JSON.parse(saved));
+    else setPalettes([{ id: crypto.randomUUID(), name: "My Palette", colors: [] }]);
+  }, []);
+
+  useEffect(() => {
+    if (palettes.length > 0) localStorage.setItem(STORAGE_KEY, JSON.stringify(palettes));
+  }, [palettes]);
+
+  const handleCopy = (colorValue: string) => {
+    setCopied(colorValue);
+    setTimeout(() => setCopied(null), 1500);
+  };
+
+  const addPalette = () => setPalettes([...palettes, { id: crypto.randomUUID(), name: `Palette ${palettes.length + 1}`, colors: [] }]);
+  const deletePalette = (id: string) => setPalettes(palettes.filter((p) => p.id !== id));
+  const renamePalette = (id: string, name: string) => setPalettes(palettes.map((p) => (p.id === id ? { ...p, name } : p)));
+  const addColorToPalette = (paletteId: string) => setPalettes(palettes.map((p) => p.id === paletteId ? { ...p, colors: [...p.colors, color] } : p));
+  const removeColorFromPalette = (paletteId: string, colorIndex: number) => setPalettes(palettes.map((p) => p.id === paletteId ? { ...p, colors: p.colors.filter((_, i) => i !== colorIndex) } : p));
+
+  const exportPalette = (palette: PaletteData) => {
+    const css = palette.colors.map((c, i) => `  --color-${i + 1}: ${c};`).join("\n");
+    const content = `:root {\n${css}\n}`;
+    const blob = new Blob([content], { type: "text/css" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${palette.name.toLowerCase().replace(/\s+/g, "-")}.css`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const getContrastColor = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? "#000000" : "#ffffff";
+  };
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-8 flex flex-col items-center text-white space-y-8">
-      <header className="flex justify-between w-full mb-8">
-        <h1 className="text-5xl font-bold flex items-center gap-2">
-          <FaPalette /> Color Picker
-        </h1>
-        <button onClick={() => router.push('/')} className="bg-gray-700 p-4 rounded-full shadow-md hover:bg-gray-600">
-          <FaHome size={28} />
-        </button>
-      </header>
+    <PageWrapper title="Color Picker" showBack>
+      <div className="max-w-5xl mx-auto">
+        <Card className="mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", "bg-[#a55eea] shadow-[0_4px_0_#844bbb]")}>
+              <Palette className="w-6 h-6 text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Pick a Color</h2>
+              <p className="text-sm text-[#888]">Click to copy hex code</p>
+            </div>
+          </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 w-full max-w-4xl justify-center items-center">
-        <ColorBox color={color} setCopied={setCopied} />
-        <HexColorPicker color={color} onChange={handleColorChange} className="flex-grow" />
+          <div className="flex flex-col lg:flex-row items-center gap-8">
+            <CopyToClipboard text={color} onCopy={() => handleCopy(color)}>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full lg:w-64 h-48 rounded-2xl cursor-pointer relative overflow-hidden border-3 border-[#333]"
+                style={{ backgroundColor: color, borderWidth: "3px" }}
+              >
+                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ color: getContrastColor(color) }}>
+                  {copied === color ? (
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-2">
+                      <Check className="w-6 h-6" />
+                      <span className="font-bold">Copied!</span>
+                    </motion.div>
+                  ) : (
+                    <>
+                      <span className="text-2xl font-black font-mono">{color.toUpperCase()}</span>
+                      <span className="text-sm opacity-70 mt-1 font-medium">Click to copy</span>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            </CopyToClipboard>
+
+            <div className="flex-1 flex justify-center">
+              <HexColorPicker color={color} onChange={setColor} style={{ width: "100%", maxWidth: 300, height: 200 }} />
+            </div>
+
+            <div className="w-full lg:w-48">
+              <label className="block text-sm font-bold text-[#888] mb-2">Hex Code</label>
+              <input
+                type="text"
+                value={color}
+                onChange={(e) => { const val = e.target.value; if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) setColor(val); }}
+                className={cn("w-full px-4 py-3 rounded-xl font-mono text-center font-bold", "bg-[#252525] border-2 border-[#444] text-white", "focus:outline-none focus:border-[#a55eea]")}
+              />
+            </div>
+          </div>
+        </Card>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-white">Your Palettes</h3>
+            <Button color="purple" size="sm" onClick={addPalette}><Plus className="w-4 h-4" /> New</Button>
+          </div>
+
+          <AnimatePresence mode="popLayout">
+            {palettes.map((palette) => (
+              <motion.div key={palette.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
+                <Card className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <input type="text" value={palette.name} onChange={(e) => renamePalette(palette.id, e.target.value)}
+                      className="bg-transparent text-lg font-bold text-white focus:outline-none border-b-2 border-transparent focus:border-[#444]" />
+                    <div className="flex gap-2">
+                      <Button variant="secondary" size="sm" onClick={() => addColorToPalette(palette.id)}><Plus className="w-4 h-4" /> Add Current</Button>
+                      {palette.colors.length > 0 && <Button variant="secondary" size="sm" onClick={() => exportPalette(palette)}><Download className="w-4 h-4" /> CSS</Button>}
+                      <Button variant="ghost" size="sm" onClick={() => deletePalette(palette.id)} className="text-[#ff4757]"><Trash2 className="w-4 h-4" /></Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    {palette.colors.map((c, i) => (
+                      <motion.div key={`${c}-${i}`} initial={{ scale: 0 }} animate={{ scale: 1 }} className="relative group">
+                        <CopyToClipboard text={c} onCopy={() => handleCopy(c)}>
+                          <motion.div whileHover={{ scale: 1.1 }} className="w-14 h-14 rounded-xl cursor-pointer border-2 border-[#333]" style={{ backgroundColor: c }} title={c} />
+                        </CopyToClipboard>
+                        <button onClick={() => removeColorFromPalette(palette.id, i)}
+                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#ff4757] text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                        {copied === c && (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute inset-0 rounded-xl bg-black/50 flex items-center justify-center">
+                            <Check className="w-5 h-5 text-white" />
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    ))}
+                    {palette.colors.length === 0 && <p className="text-[#666] text-sm py-4 font-medium">No colors yet. Pick a color and click &quot;Add Current&quot;</p>}
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
-
-      <div className="w-full max-w-4xl space-y-6 my-12 mx-5 flex flex-col justify-center items-center">
-        <button
-          onClick={addPalette}
-          className="text-lg bg-gray-700 px-5 py-2 rounded shadow hover:bg-gray-600 flex flex-row items-center gap-2"
-        >
-          <FaPlus /> Add Palette
-        </button>
-        {palettes.map((palette, paletteIndex) => (
-          <Palette
-            key={paletteIndex}
-            palette={palette}
-            onAddColor={() => addColorToPalette(paletteIndex)}
-            onDeletePalette={() => deletePalette(paletteIndex)}
-            onRenamePalette={(newName) => handlePaletteNameChange(paletteIndex, newName)}
-            onDeleteColor={(colorIndex) => deleteColorFromPalette(paletteIndex, colorIndex)}
-            onColorCopy={() => setCopied(true)}
-          />
-        ))}
-      </div>
-
-      {copied && <div className="text-green-400 text-lg font-medium">Color copied to clipboard!</div>}
-    </div>
+    </PageWrapper>
   );
-};
-
-export default ColorPicker;
+}

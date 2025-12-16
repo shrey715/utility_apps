@@ -1,0 +1,11 @@
+# Robots.txt for Random Utility Apps
+# https://www.robotstxt.org/
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://shrey715-utility-apps.vercel.app/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1

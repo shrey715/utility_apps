@@ -1,194 +1,160 @@
 "use client";
-import { useRouter } from 'next/navigation';
-import { FaHome, FaSpinner } from 'react-icons/fa';
-import { useState } from 'react';
-import React from 'react';
-import Image from 'next/image';
-import Modal from 'react-modal';
+
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Cloud, Search, Droplets, Wind, Thermometer, Eye, Sunrise, Sunset } from "lucide-react";
+import Image from "next/image";
+import { PageWrapper } from "@/components/layout/PageWrapper";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { cn } from "@/lib/utils";
 
 interface WeatherData {
   name: string;
-  sys: {
-    country: string;
-    sunrise: number;
-    sunset: number;
-  };
-  main: {
-    temp: number;
-    feels_like: number;
-    temp_min: number;
-    temp_max: number;
-    pressure: number;
-    humidity: number;
-  };
-  weather: {
-    main: string;
-    description: string;
-    icon: string;
-  }[];
-  wind: {
-    speed: number;
-  };
-  clouds: {
-    all: number;
-  };
+  sys: { country: string; sunrise: number; sunset: number };
+  main: { temp: number; feels_like: number; temp_min: number; temp_max: number; pressure: number; humidity: number };
+  weather: { main: string; description: string; icon: string }[];
+  wind: { speed: number };
+  clouds: { all: number };
 }
 
-const WeatherDisplay: React.FC<{ data: WeatherData }> = ({ data }) => {
-  if (!data) return null;
-
-  const {
-    name,
-    sys: { country },
-    main: { temp, feels_like, temp_min, temp_max, pressure, humidity },
-    weather,
-    wind: { speed },
-    clouds: { all: cloudiness },
-  } = data;
-
-  const weatherDescription = weather[0].description;
-  const weatherIcon = weather[0].icon;
-
-  return (
-    <div className="flex flex-col items-center p-4 md:p-10 bg-gradient-to-br from-blue-500 to-blue-900 text-white rounded-2xl shadow-lg max-w-lg mx-auto">
-      <h2 className="text-2xl md:text-4xl font-bold mb-2 md:mb-4">{name}, {country}</h2>
-      <p className="text-xl md:text-2xl font-light mb-4 md:mb-6">Weather Information</p>
-      
-      <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6 mb-4 md:mb-8">
-        <Image
-            src={`http://openweathermap.org/img/wn/${weatherIcon}@2x.png`}
-            alt="weather icon"
-            width={100} 
-            height={100}
-            className="w-24 h-24"
-        />
-        <div>
-          <h3 className="text-3xl md:text-5xl font-bold">{temp.toFixed(1)}°C</h3>
-          <p className="text-lg md:text-xl capitalize">{weatherDescription}</p>
-        </div>
-      </div>
-      
-      <div className="flex flex-col md:flex-row justify-between w-full mb-4 md:mb-8 space-y-4 md:space-y-0 md:space-x-7">
-        <div className="flex flex-col items-center">
-          <p className="text-lg">Feels Like</p>
-          <p className="text-2xl font-semibold">{feels_like.toFixed(1)}°C</p>
-        </div>
-        <div className="flex flex-col items-center">
-          <p className="text-lg">Min Temp</p>
-          <p className="text-2xl font-semibold">{temp_min.toFixed(1)}°C</p>
-        </div>
-        <div className="flex flex-col items-center">
-          <p className="text-lg">Max Temp</p>
-          <p className="text-2xl font-semibold">{temp_max.toFixed(1)}°C</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 md:gap-6 w-full">
-        <div className="flex flex-col items-center">
-          <p className="text-lg">Pressure</p>
-          <p className="text-2xl font-semibold">{pressure} hPa</p>
-        </div>
-        <div className="flex flex-col items-center">
-          <p className="text-lg">Humidity</p>
-          <p className="text-2xl font-semibold">{humidity}%</p>
-        </div>
-        <div className="flex flex-col items-center">
-          <p className="text-lg">Wind Speed</p>
-          <p className="text-2xl font-semibold">{speed} m/s</p>
-        </div>
-        <div className="flex flex-col items-center">
-          <p className="text-lg">Cloudiness</p>
-          <p className="text-2xl font-semibold">{cloudiness}%</p>
-        </div>
-      </div>
-    </div>
-  );
+const weatherColors: { [key: string]: { bg: string; shadow: string } } = {
+  Clear: { bg: "bg-[#ffd93d]", shadow: "shadow-[0_4px_0_#ccae31]" },
+  Clouds: { bg: "bg-[#666]", shadow: "shadow-[0_4px_0_#444]" },
+  Rain: { bg: "bg-[#3742fa]", shadow: "shadow-[0_4px_0_#2c35c8]" },
+  Drizzle: { bg: "bg-[#00d4ff]", shadow: "shadow-[0_4px_0_#00a9cc]" },
+  Thunderstorm: { bg: "bg-[#a55eea]", shadow: "shadow-[0_4px_0_#844bbb]" },
+  Snow: { bg: "bg-[#fff]", shadow: "shadow-[0_4px_0_#ccc]" },
+  Mist: { bg: "bg-[#888]", shadow: "shadow-[0_4px_0_#666]" },
 };
 
-const Weather: React.FC = () => {
-  const router = useRouter();
+const StatCard = ({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) => (
+  <div className="p-4 rounded-xl bg-[#252525] border-2 border-[#333]">
+    <div className="flex items-center gap-2 text-[#888] mb-1">
+      <Icon className="w-4 h-4" />
+      <span className="text-xs font-bold">{label}</span>
+    </div>
+    <p className="text-lg font-bold text-white">{value}</p>
+  </div>
+);
+
+export default function Weather() {
+  const [city, setCity] = useState("");
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getWeather = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if(e.key !== 'Enter') return;
-    const city = (e.target as HTMLInputElement).value;
+  const getWeather = async () => {
+    if (!city.trim()) return;
+    setLoading(true); setError(null); setWeather(null);
 
-    if(!city){
-      console.error('Invalid request parameters:', {city});
-      setError('Please enter a city name.');
-      return;
-    }
+    try {
+      const response = await fetch(`/api/weather?city=${encodeURIComponent(city.trim())}`);
+      if (!response.ok) throw new Error("City not found!");
+      setWeather(await response.json());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error");
+    } finally { setLoading(false); }
+  };
 
-    try{
-      setWeather(null);
-      setLoading(true);
-      setError(null);
-      const response = await fetch(`/api/weather?city=${city}`);
+  const formatTime = (timestamp: number) => new Date(timestamp * 1000).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
-      if(!response.ok){
-        console.error('Failed to fetch weather data:', response.statusText);
-        setError('Weather data not found.');
-        setLoading(false);
-        return;
-      }
-
-      const data: WeatherData = await response.json();
-      console.log('API response data:', data);
-      setWeather(data);
-      setLoading(false);
-    }catch(error){
-      setLoading(false);
-      setWeather(null);
-      setError('An error occurred while fetching weather data.');
-      console.error('An error occurred while fetching weather data:', error);
-    }
-  }
+  const colors = weather ? weatherColors[weather.weather[0].main] || weatherColors.Clouds : null;
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-8 flex flex-col items-center text-white space-y-8">
-      <header className="flex justify-between w-full mb-4 md:mb-8">
-        <h1 className="text-3xl md:text-5xl font-bold flex items-center gap-2">
-          Weather
-        </h1>
-        <button onClick={() => router.push('/')} className="bg-gray-700 p-2 md:p-4 rounded-full shadow-md hover:bg-gray-600">
-          <FaHome size={20} />
-        </button>
-      </header>
-
-      <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-3xl space-y-4 md:space-y-0 md:space-x-4">
-        <input type="text" placeholder="Enter city (only in India)" className="bg-gray-800 p-4 w-full rounded-lg" onKeyDown={getWeather} />
-      </div>
-
-      {loading && (
-        <div className="flex flex-col items-center space-y-4">
-          <FaSpinner size={48} className="animate-spin" />
-          <p>Fetching weather data...</p>
-        </div>
-      )}
-
-      {error && (
-        <Modal
-          isOpen={!!error}
-          onRequestClose={() => setError(null)}
-          contentLabel="Error"
-          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
-          overlayClassName="fixed inset-0 bg-black bg-opacity-50"
-        >
-          <div className="bg-white p-6 rounded-lg shadow-lg text-black">
-            <h2 className="text-2xl font-bold mb-4">Error</h2>
-            <p>{error}</p>
-            <button onClick={() => setError(null)} className="mt-4 bg-red-500 text-white p-2 rounded">
-              Close
-            </button>
+    <PageWrapper title="Weather" showBack>
+      <div className="max-w-2xl mx-auto">
+        <Card className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", "bg-[#3742fa] shadow-[0_4px_0_#2c35c8]")}>
+              <Cloud className="w-6 h-6 text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Search Location</h2>
+              <p className="text-sm text-[#888]">Enter a city name</p>
+            </div>
           </div>
-        </Modal>
-      )}
 
-      {weather && <WeatherDisplay data={weather} />}
-    </div>
-  )
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#666]" />
+              <input type="text" value={city} onChange={(e) => setCity(e.target.value)} onKeyDown={(e) => e.key === "Enter" && getWeather()}
+                placeholder="Type a city..."
+                className={cn("w-full pl-12 pr-4 py-3 rounded-xl font-medium", "bg-[#252525] border-2 border-[#444] text-white placeholder:text-[#666]", "focus:outline-none focus:border-[#3742fa]")} />
+            </div>
+            <Button color="blue" onClick={getWeather} isLoading={loading}>Search</Button>
+          </div>
+        </Card>
+
+        <AnimatePresence>
+          {error && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <Card className="mb-6 bg-[#ff4757]/10 border-[#ff4757]"><p className="text-[#ff4757] font-bold">{error}</p></Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+          {weather && colors && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <Card className="text-center overflow-hidden relative">
+                <div className={cn("absolute top-0 left-0 right-0 h-2", colors.bg)} />
+                <div className="pt-4">
+                  <h2 className="text-2xl font-black text-white mb-1">{weather.name}, {weather.sys.country}</h2>
+                  <p className="text-[#888] capitalize font-medium mb-4">{weather.weather[0].description}</p>
+
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <Image src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@4x.png`} alt={weather.weather[0].description}
+                      width={100} height={100} className="drop-shadow-lg" />
+                    <div className="text-left">
+                      <p className="text-6xl font-black text-white">{Math.round(weather.main.temp)}°</p>
+                      <p className="text-[#888] font-medium">Feels like {Math.round(weather.main.feels_like)}°C</p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center gap-6 text-[#888] font-bold">
+                    <span>↑ {Math.round(weather.main.temp_max)}°</span>
+                    <span>↓ {Math.round(weather.main.temp_min)}°</span>
+                  </div>
+                </div>
+              </Card>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard icon={Droplets} label="Humidity" value={`${weather.main.humidity}%`} />
+                <StatCard icon={Wind} label="Wind" value={`${weather.wind.speed} m/s`} />
+                <StatCard icon={Thermometer} label="Pressure" value={`${weather.main.pressure} hPa`} />
+                <StatCard icon={Eye} label="Clouds" value={`${weather.clouds.all}%`} />
+              </div>
+
+              <Card className="p-4">
+                <div className="flex justify-around">
+                  <div className="text-center">
+                    <Sunrise className="w-8 h-8 text-[#ffd93d] mx-auto mb-2" />
+                    <p className="text-xs text-[#888] font-bold">Sunrise</p>
+                    <p className="text-lg font-bold text-white">{formatTime(weather.sys.sunrise)}</p>
+                  </div>
+                  <div className="h-16 w-0.5 bg-[#333]" />
+                  <div className="text-center">
+                    <Sunset className="w-8 h-8 text-[#ff6b35] mx-auto mb-2" />
+                    <p className="text-xs text-[#888] font-bold">Sunset</p>
+                    <p className="text-lg font-bold text-white">{formatTime(weather.sys.sunset)}</p>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {!weather && !loading && !error && (
+          <Card hover={false} className="text-center py-16">
+            <div className={cn("w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center", "bg-[#252525] border-2 border-[#444]")}>
+              <Cloud className="w-10 h-10 text-[#666]" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Check the Weather</h3>
+            <p className="text-[#888]">Enter a city name to see conditions</p>
+          </Card>
+        )}
+      </div>
+    </PageWrapper>
+  );
 }
-
-export default Weather;

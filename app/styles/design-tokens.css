@@ -1,0 +1,137 @@
+/* 
+ * Design System - Playful Utility Apps
+ * Solid colors, video game aesthetic
+ */
+
+:root {
+  /* Background Colors - Dark with punch */
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #252525;
+  --bg-card: #1e1e1e;
+
+  /* Solid Accent Colors - Vibrant & Playful */
+  --accent-red: #ff4757;
+  --accent-orange: #ff6b35;
+  --accent-yellow: #ffd93d;
+  --accent-green: #2ed573;
+  --accent-cyan: #00d4ff;
+  --accent-blue: #3742fa;
+  --accent-purple: #a55eea;
+  --accent-pink: #ff6b9d;
+
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-muted: #666666;
+
+  /* Border Colors */
+  --border-default: #333333;
+  --border-hover: #444444;
+
+  /* Shadows - Solid color shadows for playful pop */
+  --shadow-red: 0 4px 0 #cc3a47;
+  --shadow-orange: 0 4px 0 #cc5529;
+  --shadow-yellow: 0 4px 0 #ccae31;
+  --shadow-green: 0 4px 0 #25aa5c;
+  --shadow-cyan: 0 4px 0 #00a9cc;
+  --shadow-blue: 0 4px 0 #2c35c8;
+  --shadow-purple: 0 4px 0 #844bbb;
+  --shadow-pink: 0 4px 0 #cc567e;
+
+  /* Border Radius - Chunky & Playful */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-pill: 100px;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Inter', system-ui, sans-serif;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Transitions */
+  --transition-fast: 100ms;
+  --transition-normal: 200ms;
+  --transition-slow: 300ms;
+}
+
+/* Keyframe Animations */
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes wiggle {
+
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pixel-blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
