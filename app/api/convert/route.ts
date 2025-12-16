@@ -1,30 +1,48 @@
 // app/api/convert/route.ts
 import { NextResponse } from 'next/server';
 
-// Currency codes from currencies.json - exact match for dropdown validation
-// This ensures only currencies shown in the UI are accepted (SSRF protection)
-const VALID_CURRENCY_CODES = new Set([
-  "AED", "AFN", "ALL", "AMD", "ANG", "AOA", "ARS", "AUD", "AWG", "AZN",
-  "BAM", "BBD", "BDT", "BGN", "BHD", "BIF", "BMD", "BND", "BOB", "BRL",
-  "BSD", "BTN", "BWP", "BYN", "BZD", "CAD", "CDF", "CHF", "CLP", "CNY",
-  "COP", "CRC", "CUP", "CVE", "CZK", "DJF", "DKK", "DOP", "DZD", "EGP",
-  "ERN", "ETB", "EUR", "FJD", "FKP", "FOK", "GBP", "GEL", "GGP", "GHS",
-  "GIP", "GMD", "GNF", "GTQ", "GYD", "HKD", "HNL", "HRK", "HTG", "HUF",
-  "IDR", "ILS", "IMP", "INR", "IQD", "IRR", "ISK", "JEP", "JMD", "JOD",
-  "JPY", "KES", "KGS", "KHR", "KID", "KMF", "KRW", "KWD", "KYD", "KZT",
-  "LAK", "LBP", "LKR", "LRD", "LSL", "LYD", "MAD", "MDL", "MGA", "MKD",
-  "MMK", "MNT", "MOP", "MRU", "MUR", "MVR", "MWK", "MXN", "MYR", "MZN",
-  "NAD", "NGN", "NIO", "NOK", "NPR", "NZD", "OMR", "PAB", "PEN", "PGK",
-  "PHP", "PKR", "PLN", "PYG", "QAR", "RON", "RSD", "RUB", "RWF", "SAR",
-  "SBD", "SCR", "SDG", "SEK", "SGD", "SHP", "SLE", "SOS", "SRD", "SSP",
-  "STN", "SYP", "SZL", "THB", "TJS", "TMT", "TND", "TOP", "TRY", "TTD",
-  "TVD", "TWD", "TZS", "UAH", "UGX", "USD", "UYU", "UZS", "VES", "VND",
-  "VUV", "WST", "XAF", "XCD", "XDR", "XOF", "XPF", "YER", "ZAR", "ZMW", "ZWL"
-]);
+// Currency lookup table - maps user input to safe, predefined values
+const CURRENCY_LOOKUP: Record<string, string> = {
+  "AED": "AED", "AFN": "AFN", "ALL": "ALL", "AMD": "AMD", "ANG": "ANG",
+  "AOA": "AOA", "ARS": "ARS", "AUD": "AUD", "AWG": "AWG", "AZN": "AZN",
+  "BAM": "BAM", "BBD": "BBD", "BDT": "BDT", "BGN": "BGN", "BHD": "BHD",
+  "BIF": "BIF", "BMD": "BMD", "BND": "BND", "BOB": "BOB", "BRL": "BRL",
+  "BSD": "BSD", "BTN": "BTN", "BWP": "BWP", "BYN": "BYN", "BZD": "BZD",
+  "CAD": "CAD", "CDF": "CDF", "CHF": "CHF", "CLP": "CLP", "CNY": "CNY",
+  "COP": "COP", "CRC": "CRC", "CUP": "CUP", "CVE": "CVE", "CZK": "CZK",
+  "DJF": "DJF", "DKK": "DKK", "DOP": "DOP", "DZD": "DZD", "EGP": "EGP",
+  "ERN": "ERN", "ETB": "ETB", "EUR": "EUR", "FJD": "FJD", "FKP": "FKP",
+  "FOK": "FOK", "GBP": "GBP", "GEL": "GEL", "GGP": "GGP", "GHS": "GHS",
+  "GIP": "GIP", "GMD": "GMD", "GNF": "GNF", "GTQ": "GTQ", "GYD": "GYD",
+  "HKD": "HKD", "HNL": "HNL", "HRK": "HRK", "HTG": "HTG", "HUF": "HUF",
+  "IDR": "IDR", "ILS": "ILS", "IMP": "IMP", "INR": "INR", "IQD": "IQD",
+  "IRR": "IRR", "ISK": "ISK", "JEP": "JEP", "JMD": "JMD", "JOD": "JOD",
+  "JPY": "JPY", "KES": "KES", "KGS": "KGS", "KHR": "KHR", "KID": "KID",
+  "KMF": "KMF", "KRW": "KRW", "KWD": "KWD", "KYD": "KYD", "KZT": "KZT",
+  "LAK": "LAK", "LBP": "LBP", "LKR": "LKR", "LRD": "LRD", "LSL": "LSL",
+  "LYD": "LYD", "MAD": "MAD", "MDL": "MDL", "MGA": "MGA", "MKD": "MKD",
+  "MMK": "MMK", "MNT": "MNT", "MOP": "MOP", "MRU": "MRU", "MUR": "MUR",
+  "MVR": "MVR", "MWK": "MWK", "MXN": "MXN", "MYR": "MYR", "MZN": "MZN",
+  "NAD": "NAD", "NGN": "NGN", "NIO": "NIO", "NOK": "NOK", "NPR": "NPR",
+  "NZD": "NZD", "OMR": "OMR", "PAB": "PAB", "PEN": "PEN", "PGK": "PGK",
+  "PHP": "PHP", "PKR": "PKR", "PLN": "PLN", "PYG": "PYG", "QAR": "QAR",
+  "RON": "RON", "RSD": "RSD", "RUB": "RUB", "RWF": "RWF", "SAR": "SAR",
+  "SBD": "SBD", "SCR": "SCR", "SDG": "SDG", "SEK": "SEK", "SGD": "SGD",
+  "SHP": "SHP", "SLE": "SLE", "SOS": "SOS", "SRD": "SRD", "SSP": "SSP",
+  "STN": "STN", "SYP": "SYP", "SZL": "SZL", "THB": "THB", "TJS": "TJS",
+  "TMT": "TMT", "TND": "TND", "TOP": "TOP", "TRY": "TRY", "TTD": "TTD",
+  "TVD": "TVD", "TWD": "TWD", "TZS": "TZS", "UAH": "UAH", "UGX": "UGX",
+  "USD": "USD", "UYU": "UYU", "UZS": "UZS", "VES": "VES", "VND": "VND",
+  "VUV": "VUV", "WST": "WST", "XAF": "XAF", "XCD": "XCD", "XDR": "XDR",
+  "XOF": "XOF", "XPF": "XPF", "YER": "YER", "ZAR": "ZAR", "ZMW": "ZMW",
+  "ZWL": "ZWL"
+};
 
-function isValidCurrencyCode(code: string | null): boolean {
-  if (!code) return false;
-  return VALID_CURRENCY_CODES.has(code.toUpperCase().trim());
+// Get safe currency code from lookup table
+function getSafeCurrencyCode(userInput: string | null): string | undefined {
+  if (!userInput) return undefined;
+  const normalized = userInput.toUpperCase().trim();
+  return CURRENCY_LOOKUP[normalized];
 }
 
 export async function GET(request: Request): Promise<NextResponse> {
@@ -44,21 +62,21 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Amount must be a positive number' }, { status: 400 });
   }
 
-  // Validate currency codes against allow-list (SSRF protection)
-  const normalizedFrom = fromCurrency.toUpperCase().trim();
-  const normalizedTo = toCurrency.toUpperCase().trim();
+  // Get safe currency codes from lookup table (SSRF protection)
+  const safeFromCurrency = getSafeCurrencyCode(fromCurrency);
+  const safeToCurrency = getSafeCurrencyCode(toCurrency);
 
-  if (!isValidCurrencyCode(normalizedFrom)) {
+  if (!safeFromCurrency) {
     return NextResponse.json({ error: `Invalid currency code: ${fromCurrency}` }, { status: 400 });
   }
 
-  if (!isValidCurrencyCode(normalizedTo)) {
+  if (!safeToCurrency) {
     return NextResponse.json({ error: `Invalid currency code: ${toCurrency}` }, { status: 400 });
   }
 
   try {
-    // Only validated currency codes are used in the URL
-    const requestURL = `https://hexarate.paikama.co/api/rates/latest/${normalizedFrom}?target=${normalizedTo}`;
+    // URL is constructed using only predefined string literals from the lookup table
+    const requestURL = `https://hexarate.paikama.co/api/rates/latest/${safeFromCurrency}?target=${safeToCurrency}`;
     const response = await fetch(requestURL);
 
     if (!response.ok) {
