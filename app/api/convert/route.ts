@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 
 // Currency lookup table - maps user input to safe, predefined values
+// This approach ensures static analysis tools can verify no user input reaches the URL
 const CURRENCY_LOOKUP: Record<string, string> = {
   "AED": "AED", "AFN": "AFN", "ALL": "ALL", "AMD": "AMD", "ANG": "ANG",
   "AOA": "AOA", "ARS": "ARS", "AUD": "AUD", "AWG": "AWG", "AZN": "AZN",
@@ -75,16 +76,30 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   try {
-    // URL is constructed using only predefined string literals from the lookup table
-    const requestURL = `https://hexarate.paikama.co/api/rates/latest/${safeFromCurrency}?target=${safeToCurrency}`;
-    const response = await fetch(requestURL);
+    // Using ExchangeRate-API (free tier, 1500 requests/month)
+    // Alternative: Open Exchange Rates or Fixer.io
+    const requestURL = `https://api.exchangerate-api.com/v4/latest/${safeFromCurrency}`;
+    const response = await fetch(requestURL, {
+      headers: {
+        'User-Agent': 'UtilityApps/1.0',
+      },
+      next: { revalidate: 3600 } // Cache for 1 hour
+    });
 
     if (!response.ok) {
+      console.error('Exchange rate API error:', response.status, response.statusText);
       return NextResponse.json({ error: 'Failed to fetch exchange rate' }, { status: response.status });
     }
 
     const data = await response.json();
-    const conversionRate = data.data.mid;
+
+    // Get the conversion rate for target currency
+    const conversionRate = data.rates[safeToCurrency];
+
+    if (!conversionRate) {
+      return NextResponse.json({ error: `Exchange rate not available for ${safeToCurrency}` }, { status: 404 });
+    }
+
     const convertedAmount = conversionRate * parsedAmount;
 
     return NextResponse.json({ conversionRate, convertedAmount });

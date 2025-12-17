@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { AnimatePresence, Reorder } from "framer-motion";
-import { Files, Upload, Trash2, GripVertical, FileText, Loader2 } from "lucide-react";
+import { Files, Upload, Trash2, GripVertical, FileText, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
 import Dropzone from "react-dropzone";
+import { PDFDocument } from "pdf-lib";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -16,30 +17,76 @@ const MAX_FILES = 50;
 export default function PDFMerger() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
 
   const handleDrop = (acceptedFiles: File[]) => {
-    if (files.length + acceptedFiles.length > MAX_FILES) { alert(`Maximum ${MAX_FILES} files`); return; }
+    setError(null);
+    if (files.length + acceptedFiles.length > MAX_FILES) { 
+      setError(`Maximum ${MAX_FILES} files allowed`); 
+      return; 
+    }
     setFiles((prev) => [...prev, ...acceptedFiles.map((file) => ({ id: crypto.randomUUID(), file }))]);
   };
 
-  const removeFile = (id: string) => setFiles((prev) => prev.filter((f) => f.id !== id));
-  const clearAll = () => setFiles([]);
+  const removeFile = (id: string) => { setFiles((prev) => prev.filter((f) => f.id !== id)); setError(null); };
+  const clearAll = () => { setFiles([]); setError(null); };
   const formatSize = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
+  // Client-side PDF merging - no server limits!
   const handleMerge = async () => {
     if (files.length < 2) return;
+    setError(null);
+    setProgress("Starting merge...");
     setLoading(true);
-    const formData = new FormData();
-    files.forEach(({ file }) => formData.append("file", file));
 
     try {
-      const response = await fetch("/api/pdf-merger", { method: "POST", body: formData });
-      if (response.ok) {
-        const blob = await response.blob();
-        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "merged.pdf"; a.click();
+      // Create a new PDF document
+      const mergedPdf = await PDFDocument.create();
+      
+      // Process each file
+      for (let i = 0; i < files.length; i++) {
+        const { file } = files[i];
+        setProgress(`Processing ${i + 1}/${files.length}: ${file.name}`);
+        
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await PDFDocument.load(arrayBuffer, { 
+            ignoreEncryption: true 
+          });
+          const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+          copiedPages.forEach((page) => mergedPdf.addPage(page));
+        } catch (pdfError) {
+          console.error(`Error processing ${file.name}:`, pdfError);
+          setError(`Failed to process "${file.name}". The file may be corrupted or password-protected.`);
+          setLoading(false);
+          setProgress(null);
+          return;
+        }
       }
-    } catch (error) { console.error("Merge failed:", error); }
-    finally { setLoading(false); }
+
+      setProgress("Generating merged PDF...");
+      
+      // Save and download
+      const mergedPdfBytes = await mergedPdf.save();
+      const blob = new Blob([new Uint8Array(mergedPdfBytes)], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "merged.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      setProgress("Done!");
+      setTimeout(() => setProgress(null), 2000);
+    } catch (err) { 
+      console.error("Merge failed:", err);
+      setError("An error occurred while merging PDFs. Please try again.");
+    }
+    finally { 
+      setLoading(false); 
+    }
   };
 
   const totalSize = files.reduce((sum, f) => sum + f.file.size, 0);
@@ -47,6 +94,27 @@ export default function PDFMerger() {
   return (
     <PageWrapper title="PDF Merger" showBack>
       <div className="max-w-3xl mx-auto">
+        {/* Info banner */}
+        <div className="mb-4 p-3 rounded-lg bg-[#00d4ff]/10 border border-[#00d4ff]/30 text-sm text-[#00d4ff] flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+          <span><strong>Client-side processing</strong> – Your files never leave your device. No size limits!</span>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-[#ff4757]/10 border border-[#ff4757]/30 text-sm text-[#ff4757] flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            {error}
+          </div>
+        )}
+
+        {progress && (
+          <div className="mb-4 p-3 rounded-lg bg-[#ffa502]/10 border border-[#ffa502]/30 text-sm text-[#ffa502] flex items-center gap-2">
+            {loading && <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin" />}
+            {!loading && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
+            {progress}
+          </div>
+        )}
+
         <Card className="mb-6">
           <div className="flex items-center gap-3 mb-4">
             <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", "bg-[#ff6b35] shadow-[0_4px_0_#cc5529]")}>
@@ -98,12 +166,12 @@ export default function PDFMerger() {
                         <FileText className="w-5 h-5 text-[#ff4757]" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-white font-bold truncate">{item.file.name}</p>
-                        <p className="text-xs text-[#888]">{formatSize(item.file.size)}</p>
+                        <p className="text-white font-medium truncate">{item.file.name}</p>
+                        <p className="text-[#888] text-xs font-medium">{formatSize(item.file.size)}</p>
                       </div>
                     </div>
-                    <span className="text-xs text-[#666] w-6 text-center font-bold">{index + 1}</span>
-                    <button onClick={() => removeFile(item.id)} className="p-2 rounded-lg hover:bg-[#ff4757]/10 text-[#666] hover:text-[#ff4757] transition-colors">
+                    <span className="text-[#666] text-xs font-bold">#{index + 1}</span>
+                    <button onClick={() => removeFile(item.id)} className="p-2 rounded-lg hover:bg-[#ff4757]/10 text-[#ff4757]">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </Reorder.Item>
@@ -111,22 +179,9 @@ export default function PDFMerger() {
               </AnimatePresence>
             </Reorder.Group>
 
-            <div className="mt-6 pt-4 border-t-2 border-[#333]">
-              <Button color="orange" onClick={handleMerge} disabled={files.length < 2 || loading} className="w-full" size="lg">
-                {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Merging...</> : <><Files className="w-5 h-5" /> Merge {files.length} PDFs</>}
-              </Button>
-              {files.length < 2 && <p className="text-center text-[#666] text-sm mt-2 font-medium">Add at least 2 files</p>}
-            </div>
-          </Card>
-        )}
-
-        {files.length === 0 && (
-          <Card hover={false} className="text-center py-16">
-            <div className={cn("w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center", "bg-[#252525] border-2 border-[#444]")}>
-              <Files className="w-10 h-10 text-[#666]" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">No PDFs Added</h3>
-            <p className="text-[#888]">Upload files to merge them</p>
+            <Button color="orange" className="w-full mt-6" size="lg" onClick={handleMerge} disabled={files.length < 2 || loading}>
+              {loading ? <><Loader2 className="animate-spin" /> Merging...</> : <><Files /> Merge {files.length} PDFs</>}
+            </Button>
           </Card>
         )}
       </div>
